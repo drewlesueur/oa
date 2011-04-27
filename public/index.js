@@ -162,7 +162,7 @@ OfficeListPresenter = (function() {
             return alert("saved");
           },
           error: function() {
-            return alert("not saved");
+            return console.log("not saved");
           }
         });
         return listing.view.handleMarkerClick();

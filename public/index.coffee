@@ -106,7 +106,7 @@ class OfficeListPresenter
        @listings.add listing
        listing.save null,
          success: () -> alert "saved"
-         error: () -> alert "not saved"
+         error: () -> console.log "not saved"
        listing.view.handleMarkerClick()
       else
         alert "There was a problem loading"

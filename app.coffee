@@ -1,26 +1,21 @@
 config = require './config.coffee'
 Client = require('mysql').Client
 client = new Client
+_ = require "underscore"
+require("drews-mixins") _
+MySqlHelper = require("mysql-helper").MySqlHelper
+db = new MySqlHelper client
 
-console.log config
+
 client.host = 'drew.the.tl'
 client.user = config.user
 client.password = config.password
 client.connect()
-
-  client.query("Use #{config.db};")
-
-
-
-# * Module dependencies.
+client.query("Use #{config.db};")
 
 
 express = require('express');
-
 app = module.exports = express.createServer();
-
-
-
 app.configure () ->
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
@@ -49,16 +44,24 @@ app.post '/', (req, res) ->
   , [req.param("address"), req.param("notes"), 
   req.param("lat"), req.param("lng")]
   res.send "thanks"
-  
+
+
 app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
 
 
 app.post "/listings", (req, res) ->
+  console.log req
+  #db.insert "listings", 
+    
   
 
 
 app.get "/listings", (req, res) ->
+  db.query "select * from listings", (err, results) ->
+    if err then return res.send {}
+    res.send results
+  return
   res.send [
     address: "gilbert, az"
     notes: "you win"
