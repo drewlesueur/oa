@@ -49,14 +49,17 @@ app.post '/', (req, res) ->
 app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
 
+app.post "/cleanUpTestDb", (req, res) ->
+  db.query "delete from listings where address = '1465 E. Halifax St, Mesa, AZ 85203'", (err) ->
+    if err then return res.send err
+    res.send "success"
 
 app.post "/listings", (req, res) ->
   console.log req
-  #db.insert "listings", 
+  db.insert "listings", req.body, (err) ->
+    if err then return res.send err.message
+    res.send {'yay': 1}
     
-  
-
-
 app.get "/listings", (req, res) ->
   db.query "select * from listings", (err, results) ->
     if err then return res.send {}

@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListPresenter, isTesting;
+var GoogleMap, Listing, ListingView, Listings, OfficeListPresenter, isTesting, liteAlert;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -6,6 +6,9 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.prototype = new ctor;
   child.__super__ = parent.prototype;
   return child;
+};
+liteAlert = function(message) {
+  return console.log(message);
 };
 isTesting = function() {
   var url;
@@ -15,6 +18,7 @@ isTesting = function() {
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
+    this.handleDoneReloading = __bind(this.handleDoneReloading, this);;
     this.reloadListings = __bind(this.reloadListings, this);;
     this.removeListing = __bind(this.removeListing, this);;
     this.removeListings = __bind(this.removeListings, this);;
@@ -78,6 +82,9 @@ GoogleMap = (function() {
   GoogleMap.prototype.reloadListings = function() {
     return $('#reload-text').text("Reloading...");
   };
+  GoogleMap.prototype.handleDoneReloading = function() {
+    return $('#reload-text').text("");
+  };
   return GoogleMap;
 })();
 Listing = (function() {
@@ -134,7 +141,11 @@ OfficeListPresenter = (function() {
   };
   OfficeListPresenter.prototype.handleReload = function() {
     this.map.removeListings(this.listings.models);
-    this.listings.fetch();
+    this.listings.fetch({
+      success: __bind(function() {
+        return this.map.handleDoneReloading();
+      }, this)
+    });
     return this.map.reloadListings();
   };
   OfficeListPresenter.prototype.handleSubmit = function() {
@@ -143,6 +154,7 @@ OfficeListPresenter = (function() {
       address: $('#address').val(),
       notes: $('#notes').val()
     });
+    console.log($('#address, #notes, #lat, #lng').val(""));
     geocoder = new google.maps.Geocoder();
     return geocoder.geocode({
       address: listing.get('address')
@@ -158,12 +170,12 @@ OfficeListPresenter = (function() {
         });
         this.listings.add(listing);
         listing.save(null, {
-          success: function() {
-            return alert("saved");
-          },
-          error: function() {
-            return console.log("not saved");
-          }
+          success: __bind(function() {
+            return liteAlert("saved");
+          }, this),
+          error: __bind(function() {
+            return liteAleret("not saved");
+          }, this)
         });
         return listing.view.handleMarkerClick();
       } else {

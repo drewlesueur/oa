@@ -1,3 +1,6 @@
+liteAlert = (message) ->
+  console.log message
+
 isTesting = () ->
   url = location.href.toString()
   url.indexOf("test") != -1
@@ -45,6 +48,8 @@ class GoogleMap extends Backbone.View
     listing.view.bubble?.setMap null
   reloadListings: () =>
     $('#reload-text').text "Reloading..."
+  handleDoneReloading: () =>
+    $('#reload-text').text ""
     
 
 
@@ -87,15 +92,19 @@ class OfficeListPresenter
     @handleRefreshedListing listing
   handleReload: () =>
     @map.removeListings @listings.models
-    @listings.fetch()
+    @listings.fetch
+      success: () => @map.handleDoneReloading()
     @map.reloadListings()
-
   handleSubmit: () =>
-   listing = new Listing
+    listing = new Listing
      address: $('#address').val()
      notes: $('#notes').val()
-   geocoder = new google.maps.Geocoder()
-   geocoder.geocode {address: listing.get('address')}, (results, status) =>
+
+    console.log $('#address, #notes, #lat, #lng').val("")
+    
+    
+    geocoder = new google.maps.Geocoder()
+    geocoder.geocode {address: listing.get('address')}, (results, status) =>
      if status is google.maps.GeocoderStatus.OK
        latlng = results[0].geometry.location
        @map.map.setCenter latlng
@@ -105,8 +114,9 @@ class OfficeListPresenter
          lng: latlng.lng()
        @listings.add listing
        listing.save null,
-         success: () -> alert "saved"
-         error: () -> console.log "not saved"
+         success: () => 
+           liteAlert "saved"
+         error: () => liteAleret "not saved"
        listing.view.handleMarkerClick()
       else
         alert "There was a problem loading"
