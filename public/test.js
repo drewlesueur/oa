@@ -1,4 +1,4 @@
-var cleanDb, listingModels, map, savingAListing, server, test, tests, testsComplete;
+var cleanDb, listingModels, map, runTests, savingAListing, server, test, tests, testsComplete;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -120,12 +120,14 @@ testsComplete = function(err, results) {
       return liteAlert("data cleaned");
     }
   });
-  return console.log("" + (_.getAssertCount()) + " tests ran\n" + (_.getPassCount()) + " tests passed\n" + (_.getFailCount()) + " tests failed");
+  results = "" + (_.getAssertCount()) + " tests ran\n" + (_.getPassCount()) + " tests passed\n" + (_.getFailCount()) + " tests failed";
+  $('#test-text').html(results.replace(/\n/g, "<br />"));
+  return console.log(results);
 };
-$(document).ready(function() {
+runTests = function() {
   return _.wait(1000, function() {
     listingModels = app.listings.models;
     map = app.map.map;
     return _.series(tests, testsComplete);
   });
-});
+};

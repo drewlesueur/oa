@@ -1,6 +1,8 @@
 nohup.out
 *.swp
 *.swo
+*.sw*
 config.coffee
 config.js
+a.js
 

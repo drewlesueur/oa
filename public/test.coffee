@@ -122,19 +122,22 @@ testsComplete = (err, results) ->
     
     
 
-  console.log """
+  results = """
     #{_.getAssertCount()} tests ran
     #{_.getPassCount()} tests passed
     #{_.getFailCount()} tests failed
   """
 
-
-$(document).ready ->
+  $('#test-text').html results.replace /\n/g, "<br />"
+  console.log results
+  
+runTests = () ->
   _.wait 1000, () ->
     listingModels = app.listings.models
     map = app.map.map
-
     _.series tests, testsComplete
+
+
 
 
 

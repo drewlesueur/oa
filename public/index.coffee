@@ -51,9 +51,6 @@ class GoogleMap extends Backbone.View
   handleDoneReloading: () =>
     $('#reload-text').text ""
     
-
-
-    
 class Listing extends Backbone.Model
   constructor: () ->
     super
@@ -76,6 +73,14 @@ class Listings extends Backbone.Collection
   constructor: () ->
     super
 
+
+class OfficeListController extends Backbone.Controller
+  constructor: () ->
+    super
+  routes:
+    "test": "test"
+  test: () =>
+    runTests() 
     
 
 class OfficeListPresenter
@@ -116,7 +121,7 @@ class OfficeListPresenter
        listing.save null,
          success: () => 
            liteAlert "saved"
-         error: () => liteAleret "not saved"
+         error: () => liteAlert "not saved"
        listing.view.handleMarkerClick()
       else
         alert "There was a problem loading"
@@ -126,6 +131,9 @@ class OfficeListPresenter
       e.preventDefault()
       @handleSubmit()
     $('#reload').click @handleReload
+
+    @officeListController = new OfficeListController
+    Backbone.history.start()
       
 
     @map = new GoogleMap()

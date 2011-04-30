@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListPresenter, isTesting, liteAlert;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, isTesting, liteAlert;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -119,6 +119,19 @@ Listings = (function() {
   }
   return Listings;
 })();
+OfficeListController = (function() {
+  __extends(OfficeListController, Backbone.Controller);
+  function OfficeListController() {
+    this.test = __bind(this.test, this);;    OfficeListController.__super__.constructor.apply(this, arguments);
+  }
+  OfficeListController.prototype.routes = {
+    "test": "test"
+  };
+  OfficeListController.prototype.test = function() {
+    return runTests();
+  };
+  return OfficeListController;
+})();
 OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleRefreshedListings = function() {
     var listing, _i, _len, _ref, _results;
@@ -174,7 +187,7 @@ OfficeListPresenter = (function() {
             return liteAlert("saved");
           }, this),
           error: __bind(function() {
-            return liteAleret("not saved");
+            return liteAlert("not saved");
           }, this)
         });
         return listing.view.handleMarkerClick();
@@ -194,6 +207,8 @@ OfficeListPresenter = (function() {
       return this.handleSubmit();
     }, this));
     $('#reload').click(this.handleReload);
+    this.officeListController = new OfficeListController;
+    Backbone.history.start();
     this.map = new GoogleMap();
     this.listings = new Listings;
     this.listings.bind("refresh", this.handleRefreshedListings);

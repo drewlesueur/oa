@@ -62,21 +62,8 @@ app.post "/listings", (req, res) ->
     
 app.get "/listings", (req, res) ->
   db.query "select * from listings", (err, results) ->
-    if err then return res.send {}
-    res.send results
-  return
-  res.send [
-    address: "gilbert, az"
-    notes: "you win"
-    lat: 33.4340894
-    lng: -111.6356991
-  ,
-    address: "Lehi, AZ"
-    notes: "you loose"
-    lat: 34.4340894
-    lng: -111.6356991 
-  ]
-
+   if err then return res.send {}
+   res.send results
   
 
 

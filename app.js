@@ -41,7 +41,7 @@ app.post('/', function(req, res) {
 app.get("/drew", function(req, res) {
   return res.send("aguzate, hazte valer");
 });
-app.post("cleanUpTestDb", function(req, res) {
+app.post("/cleanUpTestDb", function(req, res) {
   return db.query("delete from listings where address = '1465 E. Halifax St, Mesa, AZ 85203'", function(err) {
     if (err) {
       return res.send(err);
