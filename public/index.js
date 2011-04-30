@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, isTesting, liteAlert;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, liteAlert;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -10,14 +10,10 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 liteAlert = function(message) {
   return console.log(message);
 };
-isTesting = function() {
-  var url;
-  url = location.href.toString();
-  return url.indexOf("test") !== -1;
-};
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
+    this.lookup = __bind(this.lookup, this);;
     this.handleDoneReloading = __bind(this.handleDoneReloading, this);;
     this.reloadListings = __bind(this.reloadListings, this);;
     this.removeListing = __bind(this.removeListing, this);;
@@ -35,6 +31,9 @@ GoogleMap = (function() {
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
     this.map = new google.maps.Map(this.el[0], this.options);
+    $('#address').typed(__bind(function() {
+      return this.trigger("addresschange");
+    }, this));
   }
   GoogleMap.prototype.addListing = function(listing) {
     var bubble, latlng, marker;
@@ -85,6 +84,19 @@ GoogleMap = (function() {
   GoogleMap.prototype.handleDoneReloading = function() {
     return $('#reload-text').text("");
   };
+  GoogleMap.prototype.lookup = function(address, done) {
+    var geocoder;
+    geocoder = new google.maps.Geocoder();
+    return geocoder.geocode({
+      address: address
+    }, __bind(function(results, status) {
+      if (status === google.maps.GeocoderStatus.OK) {
+        return done(null, results);
+      } else {
+        return done(status);
+      }
+    }, this));
+  };
   return GoogleMap;
 })();
 Listing = (function() {
@@ -122,10 +134,15 @@ Listings = (function() {
 OfficeListController = (function() {
   __extends(OfficeListController, Backbone.Controller);
   function OfficeListController() {
-    this.test = __bind(this.test, this);;    OfficeListController.__super__.constructor.apply(this, arguments);
+    this.test = __bind(this.test, this);;
+    this.tests = __bind(this.tests, this);;    OfficeListController.__super__.constructor.apply(this, arguments);
   }
   OfficeListController.prototype.routes = {
-    "test": "test"
+    "test": "test",
+    "tests/:test": "tests"
+  };
+  OfficeListController.prototype.tests = function(test) {
+    return runTest(test);
   };
   OfficeListController.prototype.test = function() {
     return runTests();
@@ -162,38 +179,34 @@ OfficeListPresenter = (function() {
     return this.map.reloadListings();
   };
   OfficeListPresenter.prototype.handleSubmit = function() {
-    var geocoder, listing;
+    var listing;
     listing = new Listing({
       address: $('#address').val(),
       notes: $('#notes').val()
     });
-    console.log($('#address, #notes, #lat, #lng').val(""));
-    geocoder = new google.maps.Geocoder();
-    return geocoder.geocode({
-      address: listing.get('address')
-    }, __bind(function(results, status) {
+    $('#address, #notes, #lat, #lng').val("");
+    return this.map.lookup(listing.get("address"), __bind(function(err, results) {
       var latlng;
-      if (status === google.maps.GeocoderStatus.OK) {
-        latlng = results[0].geometry.location;
-        this.map.map.setCenter(latlng);
-        this.map.map.setZoom(13);
-        listing.set({
-          lat: latlng.lat(),
-          lng: latlng.lng()
-        });
-        this.listings.add(listing);
-        listing.save(null, {
-          success: __bind(function() {
-            return liteAlert("saved");
-          }, this),
-          error: __bind(function() {
-            return liteAlert("not saved");
-          }, this)
-        });
-        return listing.view.handleMarkerClick();
-      } else {
-        return alert("There was a problem loading");
+      if (err) {
+        return liteAlert("Error getting address");
       }
+      latlng = results[0].geometry.location;
+      this.map.map.setCenter(latlng);
+      this.map.map.setZoom(13);
+      listing.set({
+        lat: latlng.lat(),
+        lng: latlng.lng()
+      });
+      this.listings.add(listing);
+      listing.save(null, {
+        success: __bind(function() {
+          return liteAlert("saved");
+        }, this),
+        error: __bind(function() {
+          return liteAlert("not saved");
+        }, this)
+      });
+      return listing.view.handleMarkerClick();
     }, this));
   };
   function OfficeListPresenter() {
@@ -201,7 +214,7 @@ OfficeListPresenter = (function() {
     this.handleReload = __bind(this.handleReload, this);;
     this.handleAddedListing = __bind(this.handleAddedListing, this);;
     this.handleRefreshedListing = __bind(this.handleRefreshedListing, this);;
-    this.handleRefreshedListings = __bind(this.handleRefreshedListings, this);;    var listing, onLoc, _ref;
+    this.handleRefreshedListings = __bind(this.handleRefreshedListings, this);;    var onLoc, _ref;
     $('#listing-form').submit(__bind(function(e) {
       e.preventDefault();
       return this.handleSubmit();
@@ -213,11 +226,34 @@ OfficeListPresenter = (function() {
     this.listings = new Listings;
     this.listings.bind("refresh", this.handleRefreshedListings);
     this.listings.bind("add", this.handleAddedListing);
-    listing = new Listing({
-      address: "test",
-      "notes": "test"
-    });
     this.listings.fetch();
+    this.map.bind("addresschange", __bind(function() {
+      var listing;
+      listing = new Listing({
+        address: $('#address').val(),
+        notes: $('#notes').val()
+      });
+      listing.bind("remove", __bind(function(model, collection) {
+        return this.map.removeListing(model);
+      }, this));
+      return this.map.lookup(listing.get('address'), __bind(function(err, results) {
+        var latlng;
+        if (err) {
+          return liteAlert("Error getting address");
+        }
+        this.listings.remove(this.tempListing);
+        this.tempListing = listing;
+        latlng = results[0].geometry.location;
+        this.map.map.setCenter(latlng);
+        this.map.map.setZoom(13);
+        listing.set({
+          lat: latlng.lat(),
+          lng: latlng.lng()
+        });
+        this.listings.add(listing);
+        return listing.view.handleMarkerClick();
+      }, this));
+    }, this));
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

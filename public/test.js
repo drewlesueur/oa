@@ -1,4 +1,4 @@
-var cleanDb, listingModels, map, runTests, savingAListing, server, test, tests, testsComplete;
+var cleanDb, listingModels, map, runTest, runTests, savingAListing, server, test, tests, testsComplete;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -45,7 +45,6 @@ test("I should see the info bubble when clicking on the marker", function(done) 
   });
 });
 savingAListing = function(done) {
-  console.log("SAAAAAAAAAAAVING");
   $('#address').val("1465 E. Halifax St, Mesa, AZ 85203");
   $('#notes').val("These notes are my own");
   $('#listing-form').submit();
@@ -72,7 +71,6 @@ savingAListing = function(done) {
     $('#reload').click();
     _.assertSee("Reloading");
     return _.wait(1000, function() {
-      console.log("comparing the listings");
       newListings = _.map(app.listings.models, function(model) {
         return model.attributes.address;
       });
@@ -90,6 +88,36 @@ cleanDb = function(done) {
 test("I should be able to save", function(done) {
   return _.series([cleanDb, savingAListing, cleanDb], function() {
     return done();
+  });
+});
+test("starting to type should auto look up", function(done) {
+  $('#address').val("250 s. arizona ave, chandler, az");
+  $("#notes").val("gangplankizzle");
+  app.map.trigger("addresschange");
+  return _.wait(1000, function() {
+    var latlng, oldNewListings;
+    latlng = map.getCenter();
+    _.assertClose(latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank");
+    _.assertClose(latlng.lng(), -111.841, 0.001, "auto lookup lng for ganglplank");
+    _.assertSee("gangplankizzle", "the notes should auto pop up");
+    $('#address').val("ray and arizone ave, mesa, az");
+    $('#notes').val("egypt");
+    app.map.trigger("addresschange");
+    oldNewListings = _.filter(listingModels, function(model) {
+      return !model.id;
+    });
+    return _.wait(1000, function() {
+      var newNewListings;
+      latlng = map.getCenter();
+      _.assertClose(latlng.lat(), 33.321, 0.001, "auto lookup for egypt");
+      _.assertClose(latlng.lng(), -111.841, 0.001, "auto lookup for egypt");
+      newNewListings = _.filter(listingModels, function(model) {
+        return !model.id;
+      });
+      _.assertNoSee("gangplankizzle", "Should not see gangplankizzle");
+      _.assertEqual(oldNewListings.length, newNewListings.length, "only one non saved listing at a time");
+      return done();
+    });
   });
 });
 listingModels = null;
@@ -123,6 +151,14 @@ testsComplete = function(err, results) {
   results = "" + (_.getAssertCount()) + " tests ran\n" + (_.getPassCount()) + " tests passed\n" + (_.getFailCount()) + " tests failed";
   $('#test-text').html(results.replace(/\n/g, "<br />"));
   return console.log(results);
+};
+runTest = function(testName) {
+  testName = testName.replace(/_/g, " ");
+  return _.wait(1000, function() {
+    listingModels = app.listings.models;
+    map = app.map.map;
+    return _.series([tests[testName]], testsComplete);
+  });
 };
 runTests = function() {
   return _.wait(1000, function() {

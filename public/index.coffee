@@ -1,9 +1,6 @@
 liteAlert = (message) ->
   console.log message
 
-isTesting = () ->
-  url = location.href.toString()
-  url.indexOf("test") != -1
 
 class GoogleMap extends Backbone.View
   constructor: (width, height) ->
@@ -17,6 +14,9 @@ class GoogleMap extends Backbone.View
       center: @latLng
       mapTypeId: google.maps.MapTypeId.ROADMAP
     @map = new google.maps.Map @el[0], @options 
+
+    $('#address').typed () => @trigger "addresschange"
+
   addListing: (listing) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')
     marker = new google.maps.Marker
@@ -35,6 +35,7 @@ class GoogleMap extends Backbone.View
 
     google.maps.event.addListener marker, 'click', () ->
       listing.view.handleMarkerClick()
+      
      
 
   addListings: (listings) =>
@@ -50,6 +51,13 @@ class GoogleMap extends Backbone.View
     $('#reload-text').text "Reloading..."
   handleDoneReloading: () =>
     $('#reload-text').text ""
+  lookup: (address, done) =>
+    geocoder = new google.maps.Geocoder()
+    geocoder.geocode {address: address}, (results, status) =>
+      if status is google.maps.GeocoderStatus.OK
+        done null, results
+      else
+        done status
     
 class Listing extends Backbone.Model
   constructor: () ->
@@ -79,8 +87,12 @@ class OfficeListController extends Backbone.Controller
     super
   routes:
     "test": "test"
+    "tests/:test": "tests"
+  tests: (test) =>
+    runTest test
   test: () =>
     runTests() 
+
     
 
 class OfficeListPresenter
@@ -102,29 +114,24 @@ class OfficeListPresenter
     @map.reloadListings()
   handleSubmit: () =>
     listing = new Listing
-     address: $('#address').val()
-     notes: $('#notes').val()
-
-    console.log $('#address, #notes, #lat, #lng').val("")
+      address: $('#address').val()
+      notes: $('#notes').val()
+    $('#address, #notes, #lat, #lng').val("")
     
-    
-    geocoder = new google.maps.Geocoder()
-    geocoder.geocode {address: listing.get('address')}, (results, status) =>
-     if status is google.maps.GeocoderStatus.OK
-       latlng = results[0].geometry.location
-       @map.map.setCenter latlng
-       @map.map.setZoom 13
-       listing.set 
-         lat: latlng.lat()
-         lng: latlng.lng()
-       @listings.add listing
-       listing.save null,
-         success: () => 
-           liteAlert "saved"
-         error: () => liteAlert "not saved"
-       listing.view.handleMarkerClick()
-      else
-        alert "There was a problem loading"
+    @map.lookup listing.get("address"), (err, results) =>
+      if err then return liteAlert "Error getting address"
+      latlng = results[0].geometry.location
+      @map.map.setCenter latlng
+      @map.map.setZoom 13
+      listing.set 
+        lat: latlng.lat()
+        lng: latlng.lng()
+      @listings.add listing
+      listing.save null,
+        success: () => 
+          liteAlert "saved"
+        error: () => liteAlert "not saved"
+      listing.view.handleMarkerClick()
 
   constructor: () ->
     $('#listing-form').submit (e) =>
@@ -140,9 +147,26 @@ class OfficeListPresenter
     @listings = new Listings
     @listings.bind "refresh", @handleRefreshedListings
     @listings.bind "add", @handleAddedListing
-    listing = new Listing address: "test", "notes": "test"
     @listings.fetch()
-   
+    @map.bind "addresschange", () =>
+      
+      listing = new Listing
+        address: $('#address').val()
+        notes: $('#notes').val()
+      listing.bind "remove", (model, collection) =>
+        @map.removeListing model
+      @map.lookup listing.get('address'), (err, results) =>
+        if err then return liteAlert "Error getting address"
+        @listings.remove(@tempListing)
+        @tempListing = listing
+        latlng = results[0].geometry.location
+        @map.map.setCenter latlng
+        @map.map.setZoom 13
+        listing.set 
+          lat: latlng.lat()
+          lng: latlng.lng()
+        @listings.add listing
+        listing.view.handleMarkerClick()
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

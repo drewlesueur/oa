@@ -48,7 +48,6 @@ test "I should see the info bubble when clicking on the marker", (done) ->
 
 
 savingAListing = (done) ->
-  console.log "SAAAAAAAAAAAVING"
   $('#address').val "1465 E. Halifax St, Mesa, AZ 85203"
   $('#notes').val "These notes are my own"
   $('#listing-form').submit()
@@ -85,7 +84,6 @@ savingAListing = (done) ->
     $('#reload').click()
     _.assertSee "Reloading"
     _.wait 1000, () ->
-      console.log "comparing the listings"
       newListings = _.map app.listings.models, (model) -> model.attributes.address
       _.assertEqual _.isEqual(oldListings, newListings), 1,
       "Listings should be reloaded"
@@ -99,6 +97,36 @@ cleanDb = (done) ->
 
 test "I should be able to save", (done) -> 
   _.series [cleanDb, savingAListing, cleanDb], () -> done()
+
+
+
+test "starting to type should auto look up", (done) ->
+  $('#address').val "250 s. arizona ave, chandler, az"
+  $("#notes").val "gangplankizzle"
+  app.map.trigger "addresschange"
+  _.wait 1000, () ->
+    latlng = map.getCenter()
+    _.assertClose latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank"
+    _.assertClose latlng.lng(), -111.841, 0.001, "auto lookup lng for ganglplank"
+    _.assertSee "gangplankizzle", "the notes should auto pop up"
+
+    $('#address').val "ray and arizone ave, mesa, az"
+    $('#notes').val "egypt"
+    app.map.trigger "addresschange"
+
+    oldNewListings = _.filter listingModels, (model) -> not model.id
+    _.wait 1000, () ->
+      latlng = map.getCenter()
+      _.assertClose latlng.lat(), 33.321, 0.001, "auto lookup for egypt"
+      _.assertClose latlng.lng(), -111.841, 0.001, "auto lookup for egypt"
+      newNewListings = _.filter listingModels, (model) -> not model.id
+      _.assertNoSee "gangplankizzle", "Should not see gangplankizzle"
+      _.assertEqual oldNewListings.length, newNewListings.length, "only one non saved listing at a time"
+      done()
+
+     
+    
+
 
 listingModels = null
 map = null
@@ -131,13 +159,16 @@ testsComplete = (err, results) ->
   $('#test-text').html results.replace /\n/g, "<br />"
   console.log results
   
+
+runTest = (testName) ->
+  testName = testName.replace /_/g, " "
+  _.wait 1000, () ->
+    listingModels = app.listings.models
+    map = app.map.map
+    _.series [tests[testName]], testsComplete
+  
 runTests = () ->
   _.wait 1000, () ->
     listingModels = app.listings.models
     map = app.map.map
     _.series tests, testsComplete
-
-
-
-
-
