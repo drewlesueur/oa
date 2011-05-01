@@ -31,7 +31,7 @@ GoogleMap = (function() {
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
     this.map = new google.maps.Map(this.el[0], this.options);
-    $('#address').typed(__bind(function() {
+    $('#address').change(__bind(function() {
       return this.trigger("addresschange");
     }, this));
   }

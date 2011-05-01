@@ -52,7 +52,6 @@ savingAListing = (done) ->
   $('#notes').val "These notes are my own"
   #$('#listing-form').submit()
   app.handleSubmit () ->
-    alert "handled submit"
     "address field should be empty"
     _.assertEqual $('#notes').val(), "",
     "Notes field should be empty"

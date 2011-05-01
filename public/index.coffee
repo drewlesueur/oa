@@ -15,7 +15,8 @@ class GoogleMap extends Backbone.View
       mapTypeId: google.maps.MapTypeId.ROADMAP
     @map = new google.maps.Map @el[0], @options 
 
-    $('#address').typed () => @trigger "addresschange"
+    #$('#address').typed () => @trigger "addresschange"
+    $('#address').change () => @trigger "addresschange"
 
   addListing: (listing) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')

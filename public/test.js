@@ -48,9 +48,7 @@ savingAListing = function(done) {
   $('#address').val("1465 E. Halifax St, Mesa, AZ 85203");
   $('#notes').val("These notes are my own");
   return app.handleSubmit(function() {
-    var latlng, newListings, oldListings;
-    alert("handled submit");
-    "address field should be empty";
+    "address field should be empty";    var latlng, newListings, oldListings;
     _.assertEqual($('#notes').val(), "", "Notes field should be empty");
     _.assertEqual($('#lat').val(), "", "Notes field should be empty");
     _.assertEqual($('#lng').val(), "", "Notes field should be empty");
