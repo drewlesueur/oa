@@ -112,26 +112,24 @@ class OfficeListPresenter
     @listings.fetch
       success: () => @map.handleDoneReloading()
     @map.reloadListings()
-  handleSubmit: () =>
-    listing = new Listing
-      address: $('#address').val()
-      notes: $('#notes').val()
-    $('#address, #notes, #lat, #lng').val("")
-    
-    @map.lookup listing.get("address"), (err, results) =>
-      if err then return liteAlert "Error getting address"
-      latlng = results[0].geometry.location
-      @map.map.setCenter latlng
-      @map.map.setZoom 13
-      listing.set 
-        lat: latlng.lat()
-        lng: latlng.lng()
-      @listings.add listing
-      listing.save null,
-        success: () => 
-          liteAlert "saved"
-        error: () => liteAlert "not saved"
-      listing.view.handleMarkerClick()
+  handleSubmit: (done) =>
+    console.log "-----calling handle submit"
+    done ||= ->
+    if @tempListing
+      console.log "---now theres a temp listing"
+      @saveTempListing()
+      done()
+    else
+      app.map.trigger "addresschange", () =>
+        console.log "---handled address change"
+        @handleSubmit(done)
+  saveTempListing: () =>
+    $("#address, #notes, #lat, #lng").val ""
+    @tempListing.save null,
+      success: () => 
+        liteAlert "saved"
+      error: () => liteAlert "not saved"
+    @tempListing.view.handleMarkerClick()
 
   constructor: () ->
     $('#listing-form').submit (e) =>
@@ -148,15 +146,17 @@ class OfficeListPresenter
     @listings.bind "refresh", @handleRefreshedListings
     @listings.bind "add", @handleAddedListing
     @listings.fetch()
-    @map.bind "addresschange", () =>
-      
+    @map.bind "addresschange", (callback) =>
+      callback ||= ->
       listing = new Listing
         address: $('#address').val()
         notes: $('#notes').val()
       listing.bind "remove", (model, collection) =>
         @map.removeListing model
       @map.lookup listing.get('address'), (err, results) =>
-        if err then return liteAlert "Error getting address"
+        if err 
+          liteAlert "Error getting address"
+          return done err
         @listings.remove(@tempListing)
         @tempListing = listing
         latlng = results[0].geometry.location
@@ -167,6 +167,7 @@ class OfficeListPresenter
           lng: latlng.lng()
         @listings.add listing
         listing.view.handleMarkerClick()
+        callback()
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

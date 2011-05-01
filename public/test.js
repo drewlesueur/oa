@@ -47,13 +47,13 @@ test("I should see the info bubble when clicking on the marker", function(done) 
 savingAListing = function(done) {
   $('#address').val("1465 E. Halifax St, Mesa, AZ 85203");
   $('#notes').val("These notes are my own");
-  $('#listing-form').submit();
-  _.assertEqual($('#address').val(), "", "address field should be empty");
-  _.assertEqual($('#notes').val(), "", "Notes field should be empty");
-  _.assertEqual($('#lat').val(), "", "Notes field should be empty");
-  _.assertEqual($('#lng').val(), "", "Notes field should be empty");
-  return _.wait(1000, function() {
+  return app.handleSubmit(function() {
     var latlng, newListings, oldListings;
+    alert("handled submit");
+    "address field should be empty";
+    _.assertEqual($('#notes').val(), "", "Notes field should be empty");
+    _.assertEqual($('#lat').val(), "", "Notes field should be empty");
+    _.assertEqual($('#lng').val(), "", "Notes field should be empty");
     latlng = map.getCenter();
     _.assertClose(latlng.lat(), 33.44187, .01);
     "Latitude should change when adding a listing";
@@ -162,8 +162,16 @@ runTest = function(testName) {
 };
 runTests = function() {
   return _.wait(1000, function() {
+    var newTests;
     listingModels = app.listings.models;
     map = app.map.map;
-    return _.series(tests, testsComplete);
+    newTests = {};
+    _.each(tests, function(test, key) {
+      return newTests[key] = function(done) {
+        console.log(key);
+        return test(done);
+      };
+    });
+    return _.series(newTests, testsComplete);
   });
 };

@@ -178,38 +178,34 @@ OfficeListPresenter = (function() {
     });
     return this.map.reloadListings();
   };
-  OfficeListPresenter.prototype.handleSubmit = function() {
-    var listing;
-    listing = new Listing({
-      address: $('#address').val(),
-      notes: $('#notes').val()
+  OfficeListPresenter.prototype.handleSubmit = function(done) {
+    console.log("-----calling handle submit");
+    done || (done = function() {});
+    if (this.tempListing) {
+      console.log("---now theres a temp listing");
+      this.saveTempListing();
+      return done();
+    } else {
+      return app.map.trigger("addresschange", __bind(function() {
+        console.log("---handled address change");
+        return this.handleSubmit(done);
+      }, this));
+    }
+  };
+  OfficeListPresenter.prototype.saveTempListing = function() {
+    $("#address, #notes, #lat, #lng").val("");
+    this.tempListing.save(null, {
+      success: __bind(function() {
+        return liteAlert("saved");
+      }, this),
+      error: __bind(function() {
+        return liteAlert("not saved");
+      }, this)
     });
-    $('#address, #notes, #lat, #lng').val("");
-    return this.map.lookup(listing.get("address"), __bind(function(err, results) {
-      var latlng;
-      if (err) {
-        return liteAlert("Error getting address");
-      }
-      latlng = results[0].geometry.location;
-      this.map.map.setCenter(latlng);
-      this.map.map.setZoom(13);
-      listing.set({
-        lat: latlng.lat(),
-        lng: latlng.lng()
-      });
-      this.listings.add(listing);
-      listing.save(null, {
-        success: __bind(function() {
-          return liteAlert("saved");
-        }, this),
-        error: __bind(function() {
-          return liteAlert("not saved");
-        }, this)
-      });
-      return listing.view.handleMarkerClick();
-    }, this));
+    return this.tempListing.view.handleMarkerClick();
   };
   function OfficeListPresenter() {
+    this.saveTempListing = __bind(this.saveTempListing, this);;
     this.handleSubmit = __bind(this.handleSubmit, this);;
     this.handleReload = __bind(this.handleReload, this);;
     this.handleAddedListing = __bind(this.handleAddedListing, this);;
@@ -227,8 +223,9 @@ OfficeListPresenter = (function() {
     this.listings.bind("refresh", this.handleRefreshedListings);
     this.listings.bind("add", this.handleAddedListing);
     this.listings.fetch();
-    this.map.bind("addresschange", __bind(function() {
+    this.map.bind("addresschange", __bind(function(callback) {
       var listing;
+      callback || (callback = function() {});
       listing = new Listing({
         address: $('#address').val(),
         notes: $('#notes').val()
@@ -239,7 +236,8 @@ OfficeListPresenter = (function() {
       return this.map.lookup(listing.get('address'), __bind(function(err, results) {
         var latlng;
         if (err) {
-          return liteAlert("Error getting address");
+          liteAlert("Error getting address");
+          return done(err);
         }
         this.listings.remove(this.tempListing);
         this.tempListing = listing;
@@ -251,7 +249,8 @@ OfficeListPresenter = (function() {
           lng: latlng.lng()
         });
         this.listings.add(listing);
-        return listing.view.handleMarkerClick();
+        listing.view.handleMarkerClick();
+        return callback();
       }, this));
     }, this));
     $('#map-wrapper').append(this.map.el);

@@ -50,18 +50,16 @@ test "I should see the info bubble when clicking on the marker", (done) ->
 savingAListing = (done) ->
   $('#address').val "1465 E. Halifax St, Mesa, AZ 85203"
   $('#notes').val "These notes are my own"
-  $('#listing-form').submit()
-
-  _.assertEqual $('#address').val(), "",
-  "address field should be empty"
-  _.assertEqual $('#notes').val(), "",
-  "Notes field should be empty"
-  _.assertEqual $('#lat').val(), "",
-  "Notes field should be empty"
-  _.assertEqual $('#lng').val(), "",
-  "Notes field should be empty"
-
-  _.wait 1000, () ->
+  #$('#listing-form').submit()
+  app.handleSubmit () ->
+    alert "handled submit"
+    "address field should be empty"
+    _.assertEqual $('#notes').val(), "",
+    "Notes field should be empty"
+    _.assertEqual $('#lat').val(), "",
+    "Notes field should be empty"
+    _.assertEqual $('#lng').val(), "",
+    "Notes field should be empty"
     latlng = map.getCenter()
     _.assertClose latlng.lat(), 33.44187, .01
     "Latitude should change when adding a listing"
@@ -171,4 +169,9 @@ runTests = () ->
   _.wait 1000, () ->
     listingModels = app.listings.models
     map = app.map.map
-    _.series tests, testsComplete
+    newTests = {}
+    _.each tests, (test, key) ->
+      newTests[key] = (done) -> 
+        console.log key
+        test(done)
+    _.series newTests, testsComplete
