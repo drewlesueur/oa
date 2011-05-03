@@ -61,26 +61,12 @@ app.post("/listings", function(req, res) {
   });
 });
 app.get("/listings", function(req, res) {
-  db.query("select * from listings", function(err, results) {
+  return db.query("select * from listings", function(err, results) {
     if (err) {
       return res.send({});
     }
     return res.send(results);
   });
-  return;
-  return res.send([
-    {
-      address: "gilbert, az",
-      notes: "you win",
-      lat: 33.4340894,
-      lng: -111.6356991
-    }, {
-      address: "Lehi, AZ",
-      notes: "you loose",
-      lat: 34.4340894,
-      lng: -111.6356991
-    }
-  ]);
 });
 console.log("test");
 exports.app = app;

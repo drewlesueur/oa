@@ -10,6 +10,11 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 liteAlert = function(message) {
   return console.log(message);
 };
+_.each(['s'], function(method) {
+  return Backbone.Collection.prototype[method] = function() {
+    return _[method].apply(_, [this.models].concat(_.toArray(arguments)));
+  };
+});
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
@@ -19,7 +24,10 @@ GoogleMap = (function() {
     this.removeListing = __bind(this.removeListing, this);;
     this.removeListings = __bind(this.removeListings, this);;
     this.addListings = __bind(this.addListings, this);;
-    this.addListing = __bind(this.addListing, this);;    this.el = $(this.make("div"));
+    this.addListing = __bind(this.addListing, this);;
+    this.triggerNotesChange = __bind(this.triggerNotesChange, this);;
+    this.clearFields = __bind(this.clearFields, this);;
+    this.triggerAddressChange = __bind(this.triggerAddressChange, this);;    this.el = $(this.make("div"));
     this.el.css({
       width: screen.availWidth - 300 + "px",
       height: window.innerHeight + "px"
@@ -32,16 +40,36 @@ GoogleMap = (function() {
     };
     this.map = new google.maps.Map(this.el[0], this.options);
     $('#address').change(__bind(function() {
-      return this.trigger("addresschange");
+      return this.triggerAddressChange();
+    }, this));
+    $("#notes").typed(__bind(function() {
+      return this.triggerNotesChange();
     }, this));
   }
+  GoogleMap.prototype.triggerAddressChange = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return this.trigger("addresschange", {
+      address: $('#address').val(),
+      notes: $('#notes').val(),
+      youtube: $('#youtube').val()
+    }, cb);
+  };
+  GoogleMap.prototype.clearFields = function() {
+    return $("#address, #notes, #lat, #lng").val("");
+  };
+  GoogleMap.prototype.triggerNotesChange = function() {
+    return this.trigger("noteschange", $('#notes').val());
+  };
   GoogleMap.prototype.addListing = function(listing) {
     var bubble, latlng, marker;
     latlng = new google.maps.LatLng(listing.get('lat'), listing.get('lng'));
     marker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
       position: latlng,
-      title: listing.get('address')
+      title: listing.get('address'),
+      icon: "http://office.the.tl/pin.png"
     });
     listing.view.marker = marker;
     marker.setMap(this.map);
@@ -179,33 +207,68 @@ OfficeListPresenter = (function() {
     return this.map.reloadListings();
   };
   OfficeListPresenter.prototype.handleSubmit = function(done) {
+    return this.addListing(this.tempListing, done);
+  };
+  OfficeListPresenter.prototype.addListing = function(listing, done) {
+    listing || (listing = this.tempListing);
     console.log("-----calling handle submit");
     done || (done = function() {});
-    if (this.tempListing) {
-      console.log("---now theres a temp listing");
-      this.saveTempListing();
+    if (listing) {
+      if (!listing.collection) {
+        this.listings.add(listing);
+      }
+      this.map.clearFields();
+      listing.save(null, {
+        success: __bind(function() {
+          return liteAlert("saved");
+        }, this),
+        error: __bind(function(err) {
+          return done(err);
+        }, this)
+      });
+      listing.view.handleMarkerClick();
       return done();
     } else {
-      return app.map.trigger("addresschange", __bind(function() {
+      console.log("going to trigger address change");
+      return app.map.triggerAddressChange(__bind(function() {
         console.log("---handled address change");
         return this.handleSubmit(done);
       }, this));
     }
   };
-  OfficeListPresenter.prototype.saveTempListing = function() {
-    $("#address, #notes, #lat, #lng").val("");
-    this.tempListing.save(null, {
-      success: __bind(function() {
-        return liteAlert("saved");
-      }, this),
-      error: __bind(function() {
-        return liteAlert("not saved");
-      }, this)
-    });
-    return this.tempListing.view.handleMarkerClick();
+  OfficeListPresenter.prototype.addTmpListing = function(listing, callback) {
+    callback || (callback = function() {});
+    if (listing.constructor !== Listing) {
+      listing = new Listing(listing);
+    }
+    listing.bind("remove", __bind(function(model, collection) {
+      return this.map.removeListing(model);
+    }, this));
+    return this.map.lookup(listing.get('address'), __bind(function(err, results) {
+      var latlng;
+      if (err) {
+        liteAlert("Error getting address");
+        return callback(err);
+      }
+      this.listings.remove(this.tempListing);
+      this.tempListing = listing;
+      latlng = results[0].geometry.location;
+      this.map.map.setCenter(latlng);
+      this.map.map.setZoom(13);
+      listing.set({
+        lat: latlng.lat(),
+        lng: latlng.lng()
+      });
+      this.listings.add(listing);
+      listing.view.handleMarkerClick();
+      console.log("got here");
+      console.log(callback);
+      return callback();
+    }, this));
   };
   function OfficeListPresenter() {
-    this.saveTempListing = __bind(this.saveTempListing, this);;
+    this.addTmpListing = __bind(this.addTmpListing, this);;
+    this.addListing = __bind(this.addListing, this);;
     this.handleSubmit = __bind(this.handleSubmit, this);;
     this.handleReload = __bind(this.handleReload, this);;
     this.handleAddedListing = __bind(this.handleAddedListing, this);;
@@ -223,36 +286,7 @@ OfficeListPresenter = (function() {
     this.listings.bind("refresh", this.handleRefreshedListings);
     this.listings.bind("add", this.handleAddedListing);
     this.listings.fetch();
-    this.map.bind("addresschange", __bind(function(callback) {
-      var listing;
-      callback || (callback = function() {});
-      listing = new Listing({
-        address: $('#address').val(),
-        notes: $('#notes').val()
-      });
-      listing.bind("remove", __bind(function(model, collection) {
-        return this.map.removeListing(model);
-      }, this));
-      return this.map.lookup(listing.get('address'), __bind(function(err, results) {
-        var latlng;
-        if (err) {
-          liteAlert("Error getting address");
-          return done(err);
-        }
-        this.listings.remove(this.tempListing);
-        this.tempListing = listing;
-        latlng = results[0].geometry.location;
-        this.map.map.setCenter(latlng);
-        this.map.map.setZoom(13);
-        listing.set({
-          lat: latlng.lat(),
-          lng: latlng.lng()
-        });
-        this.listings.add(listing);
-        listing.view.handleMarkerClick();
-        return callback();
-      }, this));
-    }, this));
+    this.map.bind("addresschange", this.addTmpListing);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

@@ -1,6 +1,9 @@
 liteAlert = (message) ->
   console.log message
 
+_.each ['s'], (method) ->
+  Backbone.Collection.prototype[method] = () ->
+    return _[method].apply _, [this.models].concat _.toArray arguments
 
 class GoogleMap extends Backbone.View
   constructor: (width, height) ->
@@ -16,14 +19,25 @@ class GoogleMap extends Backbone.View
     @map = new google.maps.Map @el[0], @options 
 
     #$('#address').typed () => @trigger "addresschange"
-    $('#address').change () => @trigger "addresschange"
-
+    $('#address').change () => @triggerAddressChange()
+    $("#notes").typed () => @triggerNotesChange()
+  triggerAddressChange: (cb=->) =>
+    @trigger "addresschange",
+      address: $('#address').val()
+      notes: $('#notes').val()
+      youtube: $('#youtube').val()
+    , cb
+  clearFields: () => 
+    $("#address, #notes, #lat, #lng").val ""
+  triggerNotesChange: () =>
+    @trigger "noteschange", $('#notes').val()
   addListing: (listing) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')
     marker = new google.maps.Marker
       animation: google.maps.Animation.DROP
       position: latlng
       title: listing.get('address')
+      icon: "http://office.the.tl/pin.png"
     listing.view.marker = marker
     marker.setMap @map
     bubble = new google.maps.InfoWindow
@@ -113,24 +127,49 @@ class OfficeListPresenter
     @listings.fetch
       success: () => @map.handleDoneReloading()
     @map.reloadListings()
-  handleSubmit: (done) =>
+  handleSubmit: (done) => @addListing(@tempListing, done)
+  addListing: (listing, done) => 
+    listing ||= @tempListing
     console.log "-----calling handle submit"
     done ||= ->
-    if @tempListing
-      console.log "---now theres a temp listing"
-      @saveTempListing()
+    if listing
+      if not listing.collection
+        @listings.add listing
+      @map.clearFields()
+      listing.save null,
+        success: () => 
+          liteAlert "saved"
+        error: (err) => done err 
+      listing.view.handleMarkerClick()
       done()
     else
-      app.map.trigger "addresschange", () =>
+      console.log "going to trigger address change"
+      app.map.triggerAddressChange () =>
         console.log "---handled address change"
         @handleSubmit(done)
-  saveTempListing: () =>
-    $("#address, #notes, #lat, #lng").val ""
-    @tempListing.save null,
-      success: () => 
-        liteAlert "saved"
-      error: () => liteAlert "not saved"
-    @tempListing.view.handleMarkerClick()
+  addTmpListing: (listing, callback) =>
+    callback ||= ->
+    if listing.constructor isnt Listing
+      listing = new Listing listing
+    listing.bind "remove", (model, collection) =>
+      @map.removeListing model
+    @map.lookup listing.get('address'), (err, results) =>
+      if err 
+        liteAlert "Error getting address"
+        return callback err
+      @listings.remove(@tempListing)
+      @tempListing = listing
+      latlng = results[0].geometry.location
+      @map.map.setCenter latlng
+      @map.map.setZoom 13
+      listing.set 
+        lat: latlng.lat()
+        lng: latlng.lng()
+      @listings.add listing
+      listing.view.handleMarkerClick()
+      console.log "got here"
+      console.log callback
+      callback()
 
   constructor: () ->
     $('#listing-form').submit (e) =>
@@ -147,28 +186,7 @@ class OfficeListPresenter
     @listings.bind "refresh", @handleRefreshedListings
     @listings.bind "add", @handleAddedListing
     @listings.fetch()
-    @map.bind "addresschange", (callback) =>
-      callback ||= ->
-      listing = new Listing
-        address: $('#address').val()
-        notes: $('#notes').val()
-      listing.bind "remove", (model, collection) =>
-        @map.removeListing model
-      @map.lookup listing.get('address'), (err, results) =>
-        if err 
-          liteAlert "Error getting address"
-          return done err
-        @listings.remove(@tempListing)
-        @tempListing = listing
-        latlng = results[0].geometry.location
-        @map.map.setCenter latlng
-        @map.map.setZoom 13
-        listing.set 
-          lat: latlng.lat()
-          lng: latlng.lng()
-        @listings.add listing
-        listing.view.handleMarkerClick()
-        callback()
+    @map.bind "addresschange", @addTmpListing
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

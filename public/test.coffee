@@ -26,6 +26,9 @@ test "title should be office atlas", (done) ->
   "Title should equal Office Atlas"
   done()
 
+test "I should see kyles pin marker image", (done) ->
+  _.assertEqual $('[src="http://office.the.tl/pin.png"]').length > 0, true, "Should see pin"
+  done()
 
 test "A listing should load", (done) ->
   # This is for a default listing
@@ -100,8 +103,7 @@ test "I should be able to save", (done) ->
 test "starting to type should auto look up", (done) ->
   $('#address').val "250 s. arizona ave, chandler, az"
   $("#notes").val "gangplankizzle"
-  app.map.trigger "addresschange"
-  _.wait 1000, () ->
+  app.map.triggerAddressChange () ->
     latlng = map.getCenter()
     _.assertClose latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank"
     _.assertClose latlng.lng(), -111.841, 0.001, "auto lookup lng for ganglplank"
@@ -109,7 +111,7 @@ test "starting to type should auto look up", (done) ->
 
     $('#address').val "ray and arizone ave, mesa, az"
     $('#notes').val "egypt"
-    app.map.trigger "addresschange"
+    app.map.triggerAddressChange()
 
     oldNewListings = _.filter listingModels, (model) -> not model.id
     _.wait 1000, () ->
@@ -122,6 +124,26 @@ test "starting to type should auto look up", (done) ->
       done()
 
      
+test "There should be a youtube video video box", (done) ->
+  _.assertSee "Youtube html"
+  done()
+
+#test "typing in notes should update the bubble", (done) ->
+test "t", (done) ->
+  listing = app.addTmpListing
+    address: "lds temple mesa, az"
+    notes: ""
+  , () ->
+    alert "test"
+    $('#notes').val "testing notes"
+    app.map.triggerNotesChange()
+    _.assertOk $('.notes:contains(testing notes)').length, 1,
+    "notes should update on change"
+    done()
+ 
+    
+test "add listing using app.addListing"  
+
     
 
 

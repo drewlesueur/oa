@@ -29,6 +29,10 @@ test("title should be office atlas", function(done) {
   _.assertEqual(document.title, "Office Atlas", "Title should equal Office Atlas");
   return done();
 });
+test("I should see kyles pin marker image", function(done) {
+  _.assertEqual($('[src="http://office.the.tl/pin.png"]').length > 0, true, "Should see pin");
+  return done();
+});
 test("A listing should load", function(done) {
   _.assertNotEqual(listingModels[0].view.marker, null, "Marker should not be null");
   return done(null);
@@ -91,8 +95,7 @@ test("I should be able to save", function(done) {
 test("starting to type should auto look up", function(done) {
   $('#address').val("250 s. arizona ave, chandler, az");
   $("#notes").val("gangplankizzle");
-  app.map.trigger("addresschange");
-  return _.wait(1000, function() {
+  return app.map.triggerAddressChange(function() {
     var latlng, oldNewListings;
     latlng = map.getCenter();
     _.assertClose(latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank");
@@ -100,7 +103,7 @@ test("starting to type should auto look up", function(done) {
     _.assertSee("gangplankizzle", "the notes should auto pop up");
     $('#address').val("ray and arizone ave, mesa, az");
     $('#notes').val("egypt");
-    app.map.trigger("addresschange");
+    app.map.triggerAddressChange();
     oldNewListings = _.filter(listingModels, function(model) {
       return !model.id;
     });
@@ -118,6 +121,24 @@ test("starting to type should auto look up", function(done) {
     });
   });
 });
+test("There should be a youtube video video box", function(done) {
+  _.assertSee("Youtube html");
+  return done();
+});
+test("t", function(done) {
+  var listing;
+  return listing = app.addTmpListing({
+    address: "lds temple mesa, az",
+    notes: ""
+  }, function() {
+    alert("test");
+    $('#notes').val("testing notes");
+    app.map.triggerNotesChange();
+    _.assertOk($('.notes:contains(testing notes)').length, 1, "notes should update on change");
+    return done();
+  });
+});
+test("add listing using app.addListing");
 listingModels = null;
 map = null;
 server = function(method, callback) {
