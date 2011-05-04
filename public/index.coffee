@@ -20,7 +20,8 @@ class GoogleMap extends Backbone.View
 
     #$('#address').typed () => @trigger "addresschange"
     $('#address').change () => @triggerAddressChange()
-    $("#notes").typed () => @triggerNotesChange()
+    #$("#notes").typed () => @triggerNotesChange()
+    $("#notes").keyup () => @triggerNotesChange()
   triggerAddressChange: (cb=->) =>
     @trigger "addresschange",
       address: $('#address').val()
@@ -41,18 +42,16 @@ class GoogleMap extends Backbone.View
     listing.view.marker = marker
     marker.setMap @map
     bubble = new google.maps.InfoWindow
-      content: """
-       #{listing.get('address')}
-       <br />
-       #{listing.get('notes')}
-      """
+      content: listing.view.getBubbleContent()
     listing.view.bubble = bubble
 
     google.maps.event.addListener marker, 'click', () ->
       listing.view.handleMarkerClick()
       
      
-
+  updateCurrentBubbleNotes: (notes, cb=->) =>
+    if not @tempListing then return cb()
+    cb()
   addListings: (listings) =>
     for listing in listings
       @addListing listing
@@ -81,6 +80,21 @@ class Listing extends Backbone.Model
 class ListingView extends Backbone.View
   constructor: () ->
     super
+  renderBubble: () =>
+     bubbleDiv = $("[data-cid=\"#{@model.cid}\"]")
+     bubbleDiv.html @getBubbleInnerContent()
+  getBubbleContent: () =>
+      """
+      <div data-cid="#{@model.cid}" data-id="#{@model.id}">
+        #{@getBubbleInnerContent()}
+       </div>
+      """
+  getBubbleInnerContent: () =>
+    """ 
+      #{@model.get('address')}
+      <br />
+      #{@model.get('notes')}
+    """
   handleMarkerClick: () ->
     if @bubbleState == "open"
       @bubble.close()
@@ -151,8 +165,10 @@ class OfficeListPresenter
     callback ||= ->
     if listing.constructor isnt Listing
       listing = new Listing listing
+      listing.view = new ListingView model: listing
     listing.bind "remove", (model, collection) =>
       @map.removeListing model
+    listing.bind "change:notes", () => @handleListingChange listing
     @map.lookup listing.get('address'), (err, results) =>
       if err 
         liteAlert "Error getting address"
@@ -167,10 +183,16 @@ class OfficeListPresenter
         lng: latlng.lng()
       @listings.add listing
       listing.view.handleMarkerClick()
-      console.log "got here"
-      console.log callback
       callback()
-
+  handleListingChange: (listing) =>
+    console.log "listing.view is "
+    console.log listing
+    console.log listing.view
+    listing.view.renderBubble()
+  handleNotesChange: (notes, cb=->) =>
+    if not @tempListing then return cb()
+    @tempListing.set notes: notes
+    cb()
   constructor: () ->
     $('#listing-form').submit (e) =>
       e.preventDefault()
@@ -187,6 +209,7 @@ class OfficeListPresenter
     @listings.bind "add", @handleAddedListing
     @listings.fetch()
     @map.bind "addresschange", @addTmpListing
+    @map.bind "noteschange", @handleNotesChange
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

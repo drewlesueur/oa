@@ -134,7 +134,6 @@ test "t", (done) ->
     address: "lds temple mesa, az"
     notes: ""
   , () ->
-    alert "test"
     $('#notes').val "testing notes"
     app.map.triggerNotesChange()
     _.assertOk $('.notes:contains(testing notes)').length, 1,
@@ -142,7 +141,8 @@ test "t", (done) ->
     done()
  
     
-test "add listing using app.addListing"  
+test "add listing using app.addListing", (done) ->
+  done()
 
     
 
@@ -178,6 +178,9 @@ testsComplete = (err, results) ->
   $('#test-text').html results.replace /\n/g, "<br />"
   console.log results
   
+$(document).ready () ->
+  _.each tests, (val, key) ->
+    $('#tests').append $ "<div><a href=\"#tests/#{key.replace(/\s/g, '_')}\">#{key}</a></div>"
 
 runTest = (testName) ->
   testName = testName.replace /_/g, " "

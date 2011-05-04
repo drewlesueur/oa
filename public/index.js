@@ -24,6 +24,7 @@ GoogleMap = (function() {
     this.removeListing = __bind(this.removeListing, this);;
     this.removeListings = __bind(this.removeListings, this);;
     this.addListings = __bind(this.addListings, this);;
+    this.updateCurrentBubbleNotes = __bind(this.updateCurrentBubbleNotes, this);;
     this.addListing = __bind(this.addListing, this);;
     this.triggerNotesChange = __bind(this.triggerNotesChange, this);;
     this.clearFields = __bind(this.clearFields, this);;
@@ -42,7 +43,7 @@ GoogleMap = (function() {
     $('#address').change(__bind(function() {
       return this.triggerAddressChange();
     }, this));
-    $("#notes").typed(__bind(function() {
+    $("#notes").keyup(__bind(function() {
       return this.triggerNotesChange();
     }, this));
   }
@@ -74,12 +75,21 @@ GoogleMap = (function() {
     listing.view.marker = marker;
     marker.setMap(this.map);
     bubble = new google.maps.InfoWindow({
-      content: "" + (listing.get('address')) + "\n<br />\n" + (listing.get('notes'))
+      content: listing.view.getBubbleContent()
     });
     listing.view.bubble = bubble;
     return google.maps.event.addListener(marker, 'click', function() {
       return listing.view.handleMarkerClick();
     });
+  };
+  GoogleMap.prototype.updateCurrentBubbleNotes = function(notes, cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    if (!this.tempListing) {
+      return cb();
+    }
+    return cb();
   };
   GoogleMap.prototype.addListings = function(listings) {
     var listing, _i, _len, _results;
@@ -137,8 +147,21 @@ Listing = (function() {
 ListingView = (function() {
   __extends(ListingView, Backbone.View);
   function ListingView() {
-    ListingView.__super__.constructor.apply(this, arguments);
+    this.getBubbleInnerContent = __bind(this.getBubbleInnerContent, this);;
+    this.getBubbleContent = __bind(this.getBubbleContent, this);;
+    this.renderBubble = __bind(this.renderBubble, this);;    ListingView.__super__.constructor.apply(this, arguments);
   }
+  ListingView.prototype.renderBubble = function() {
+    var bubbleDiv;
+    bubbleDiv = $("[data-cid=\"" + this.model.cid + "\"]");
+    return bubbleDiv.html(this.getBubbleInnerContent());
+  };
+  ListingView.prototype.getBubbleContent = function() {
+    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.getBubbleInnerContent()) + "\n </div>";
+  };
+  ListingView.prototype.getBubbleInnerContent = function() {
+    return " \n" + (this.model.get('address')) + "\n<br />\n" + (this.model.get('notes'));
+  };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
       this.bubble.close();
@@ -240,9 +263,15 @@ OfficeListPresenter = (function() {
     callback || (callback = function() {});
     if (listing.constructor !== Listing) {
       listing = new Listing(listing);
+      listing.view = new ListingView({
+        model: listing
+      });
     }
     listing.bind("remove", __bind(function(model, collection) {
       return this.map.removeListing(model);
+    }, this));
+    listing.bind("change:notes", __bind(function() {
+      return this.handleListingChange(listing);
     }, this));
     return this.map.lookup(listing.get('address'), __bind(function(err, results) {
       var latlng;
@@ -261,12 +290,30 @@ OfficeListPresenter = (function() {
       });
       this.listings.add(listing);
       listing.view.handleMarkerClick();
-      console.log("got here");
-      console.log(callback);
       return callback();
     }, this));
   };
+  OfficeListPresenter.prototype.handleListingChange = function(listing) {
+    console.log("listing.view is ");
+    console.log(listing);
+    console.log(listing.view);
+    return listing.view.renderBubble();
+  };
+  OfficeListPresenter.prototype.handleNotesChange = function(notes, cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    if (!this.tempListing) {
+      return cb();
+    }
+    this.tempListing.set({
+      notes: notes
+    });
+    return cb();
+  };
   function OfficeListPresenter() {
+    this.handleNotesChange = __bind(this.handleNotesChange, this);;
+    this.handleListingChange = __bind(this.handleListingChange, this);;
     this.addTmpListing = __bind(this.addTmpListing, this);;
     this.addListing = __bind(this.addListing, this);;
     this.handleSubmit = __bind(this.handleSubmit, this);;
@@ -287,6 +334,7 @@ OfficeListPresenter = (function() {
     this.listings.bind("add", this.handleAddedListing);
     this.listings.fetch();
     this.map.bind("addresschange", this.addTmpListing);
+    this.map.bind("noteschange", this.handleNotesChange);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

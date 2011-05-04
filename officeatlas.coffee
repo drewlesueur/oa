@@ -62,7 +62,7 @@ app.post "/listings", (req, res) ->
     
 app.get "/listings", (req, res) ->
   db.query "select * from listings", (err, results) ->
-   if err then return res.send {}
+   if err then return res.send {}, 500
    res.send results
   
 

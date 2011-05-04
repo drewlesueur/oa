@@ -131,14 +131,15 @@ test("t", function(done) {
     address: "lds temple mesa, az",
     notes: ""
   }, function() {
-    alert("test");
     $('#notes').val("testing notes");
     app.map.triggerNotesChange();
     _.assertOk($('.notes:contains(testing notes)').length, 1, "notes should update on change");
     return done();
   });
 });
-test("add listing using app.addListing");
+test("add listing using app.addListing", function(done) {
+  return done();
+});
 listingModels = null;
 map = null;
 server = function(method, callback) {
@@ -171,6 +172,11 @@ testsComplete = function(err, results) {
   $('#test-text').html(results.replace(/\n/g, "<br />"));
   return console.log(results);
 };
+$(document).ready(function() {
+  return _.each(tests, function(val, key) {
+    return $('#tests').append($("<div><a href=\"#tests/" + (key.replace(/\s/g, '_')) + "\">" + key + "</a></div>"));
+  });
+});
 runTest = function(testName) {
   testName = testName.replace(/_/g, " ");
   return _.wait(1000, function() {
