@@ -22,6 +22,10 @@ class GoogleMap extends Backbone.View
     $('#address').change () => @triggerAddressChange()
     #$("#notes").typed () => @triggerNotesChange()
     $("#notes").keyup () => @triggerNotesChange()
+    $("#youtube").keyup () => @triggerYoutubeChange()
+  triggerYoutubeChange: (cb=->) =>
+    @trigger "youtubechange", $('#youtube').val(), cb
+      
   triggerAddressChange: (cb=->) =>
     @trigger "addresschange",
       address: $('#address').val()
@@ -92,6 +96,9 @@ class ListingView extends Backbone.View
   getBubbleInnerContent: () =>
     """ 
       #{@model.get('address')}
+      <div class="youtube">
+        #{@model.get('youtube')}
+      </div>
       <br />
       <div class="notes">
         #{@model.get('notes')}
@@ -168,6 +175,7 @@ class OfficeListPresenter
     listing.bind "remove", (model, collection) =>
       @map.removeListing model
     listing.bind "change:notes", () => @handleListingChange listing
+    listing.bind "change:youtube", () => @handleListingChange listing
     @map.lookup listing.get('address'), (err, results) =>
       if err 
         liteAlert "Error getting address"
@@ -189,6 +197,10 @@ class OfficeListPresenter
     if not @tempListing then return cb()
     @tempListing.set notes: notes
     cb()
+  handleYoutubeChange: (youtube, cb=->) =>
+    if not @tempListing then return cb()
+    @tempListing.set youtube: youtube
+    cb()
   constructor: () ->
     $('#listing-form').submit (e) =>
       e.preventDefault()
@@ -206,6 +218,7 @@ class OfficeListPresenter
     @listings.fetch()
     @map.bind "addresschange", @addTmpListing
     @map.bind "noteschange", @handleNotesChange
+    @map.bind "youtubechange", @handleYoutubeChange
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

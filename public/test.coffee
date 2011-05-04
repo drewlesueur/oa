@@ -137,7 +137,21 @@ test "typing in notes should update the bubble", (done) ->
     app.map.triggerNotesChange()
     _.assertOk $('.notes:contains(testing notes)').length, 1,
     "notes should update on change"
+    app.listings.remove listing
     done()
+
+test "should be able to add youtube video", (done) ->
+  listing = app.addTmpListing
+    address: "lds temple mesa, az"
+    notes: ""
+    youtube: ""
+  , () ->
+    $('#youtube').val '<iframe width="425" height="349" src="http://www.youtube.com/embed/UmFjNiiVk9w" frameborder="0" allowfullscreen></iframe>'
+    app.map.triggerYoutubeChange()
+    _.assertOk $('.notes:contains(testing notes)').length, 1,
+    "notes should update on change"
+    done()
+  
  
     
 test "add listing using app.addListing", (done) ->

@@ -28,7 +28,8 @@ GoogleMap = (function() {
     this.addListing = __bind(this.addListing, this);;
     this.triggerNotesChange = __bind(this.triggerNotesChange, this);;
     this.clearFields = __bind(this.clearFields, this);;
-    this.triggerAddressChange = __bind(this.triggerAddressChange, this);;    this.el = $(this.make("div"));
+    this.triggerAddressChange = __bind(this.triggerAddressChange, this);;
+    this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);;    this.el = $(this.make("div"));
     this.el.css({
       width: screen.availWidth - 300 + "px",
       height: window.innerHeight + "px"
@@ -46,7 +47,16 @@ GoogleMap = (function() {
     $("#notes").keyup(__bind(function() {
       return this.triggerNotesChange();
     }, this));
+    $("#youtube").keyup(__bind(function() {
+      return this.triggerYoutubeChange();
+    }, this));
   }
+  GoogleMap.prototype.triggerYoutubeChange = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return this.trigger("youtubechange", $('#youtube').val(), cb);
+  };
   GoogleMap.prototype.triggerAddressChange = function(cb) {
     if (cb == null) {
       cb = function() {};
@@ -160,7 +170,7 @@ ListingView = (function() {
     return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.getBubbleInnerContent()) + "\n </div>";
   };
   ListingView.prototype.getBubbleInnerContent = function() {
-    return " \n" + (this.model.get('address')) + "\n<br />\n<div class=\"notes\">\n  " + (this.model.get('notes')) + "\n</div>";
+    return " \n" + (this.model.get('address')) + "\n<div class=\"youtube\">\n  " + (this.model.get('youtube')) + "\n</div>\n<br />\n<div class=\"notes\">\n  " + (this.model.get('notes')) + "\n</div>";
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -270,6 +280,9 @@ OfficeListPresenter = (function() {
     listing.bind("change:notes", __bind(function() {
       return this.handleListingChange(listing);
     }, this));
+    listing.bind("change:youtube", __bind(function() {
+      return this.handleListingChange(listing);
+    }, this));
     return this.map.lookup(listing.get('address'), __bind(function(err, results) {
       var latlng;
       if (err) {
@@ -305,7 +318,20 @@ OfficeListPresenter = (function() {
     });
     return cb();
   };
+  OfficeListPresenter.prototype.handleYoutubeChange = function(youtube, cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    if (!this.tempListing) {
+      return cb();
+    }
+    this.tempListing.set({
+      youtube: youtube
+    });
+    return cb();
+  };
   function OfficeListPresenter() {
+    this.handleYoutubeChange = __bind(this.handleYoutubeChange, this);;
     this.handleNotesChange = __bind(this.handleNotesChange, this);;
     this.handleListingChange = __bind(this.handleListingChange, this);;
     this.addTmpListing = __bind(this.addTmpListing, this);;
@@ -329,6 +355,7 @@ OfficeListPresenter = (function() {
     this.listings.fetch();
     this.map.bind("addresschange", this.addTmpListing);
     this.map.bind("noteschange", this.handleNotesChange);
+    this.map.bind("youtubechange", this.handleYoutubeChange);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

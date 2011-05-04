@@ -134,6 +134,20 @@ test("typing in notes should update the bubble", function(done) {
     $('#notes').val("testing notes");
     app.map.triggerNotesChange();
     _.assertOk($('.notes:contains(testing notes)').length, 1, "notes should update on change");
+    app.listings.remove(listing);
+    return done();
+  });
+});
+test("should be able to add youtube video", function(done) {
+  var listing;
+  return listing = app.addTmpListing({
+    address: "lds temple mesa, az",
+    notes: "",
+    youtube: ""
+  }, function() {
+    $('#youtube').val('<iframe width="425" height="349" src="http://www.youtube.com/embed/UmFjNiiVk9w" frameborder="0" allowfullscreen></iframe>');
+    app.map.triggerYoutubeChange();
+    _.assertOk($('.notes:contains(testing notes)').length, 1, "notes should update on change");
     return done();
   });
 });
