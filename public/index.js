@@ -160,7 +160,7 @@ ListingView = (function() {
     return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.getBubbleInnerContent()) + "\n </div>";
   };
   ListingView.prototype.getBubbleInnerContent = function() {
-    return " \n" + (this.model.get('address')) + "\n<br />\n" + (this.model.get('notes'));
+    return " \n" + (this.model.get('address')) + "\n<br />\n<div class=\"notes\">\n  " + (this.model.get('notes')) + "\n</div>";
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -234,7 +234,6 @@ OfficeListPresenter = (function() {
   };
   OfficeListPresenter.prototype.addListing = function(listing, done) {
     listing || (listing = this.tempListing);
-    console.log("-----calling handle submit");
     done || (done = function() {});
     if (listing) {
       if (!listing.collection) {
@@ -252,9 +251,7 @@ OfficeListPresenter = (function() {
       listing.view.handleMarkerClick();
       return done();
     } else {
-      console.log("going to trigger address change");
       return app.map.triggerAddressChange(__bind(function() {
-        console.log("---handled address change");
         return this.handleSubmit(done);
       }, this));
     }
@@ -294,9 +291,6 @@ OfficeListPresenter = (function() {
     }, this));
   };
   OfficeListPresenter.prototype.handleListingChange = function(listing) {
-    console.log("listing.view is ");
-    console.log(listing);
-    console.log(listing.view);
     return listing.view.renderBubble();
   };
   OfficeListPresenter.prototype.handleNotesChange = function(notes, cb) {

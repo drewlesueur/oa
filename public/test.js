@@ -125,7 +125,7 @@ test("There should be a youtube video video box", function(done) {
   _.assertSee("Youtube html");
   return done();
 });
-test("t", function(done) {
+test("typing in notes should update the bubble", function(done) {
   var listing;
   return listing = app.addTmpListing({
     address: "lds temple mesa, az",

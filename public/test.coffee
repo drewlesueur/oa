@@ -128,8 +128,7 @@ test "There should be a youtube video video box", (done) ->
   _.assertSee "Youtube html"
   done()
 
-#test "typing in notes should update the bubble", (done) ->
-test "t", (done) ->
+test "typing in notes should update the bubble", (done) ->
   listing = app.addTmpListing
     address: "lds temple mesa, az"
     notes: ""

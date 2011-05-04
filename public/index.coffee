@@ -93,7 +93,9 @@ class ListingView extends Backbone.View
     """ 
       #{@model.get('address')}
       <br />
-      #{@model.get('notes')}
+      <div class="notes">
+        #{@model.get('notes')}
+      </div>
     """
   handleMarkerClick: () ->
     if @bubbleState == "open"
@@ -144,7 +146,6 @@ class OfficeListPresenter
   handleSubmit: (done) => @addListing(@tempListing, done)
   addListing: (listing, done) => 
     listing ||= @tempListing
-    console.log "-----calling handle submit"
     done ||= ->
     if listing
       if not listing.collection
@@ -157,9 +158,7 @@ class OfficeListPresenter
       listing.view.handleMarkerClick()
       done()
     else
-      console.log "going to trigger address change"
       app.map.triggerAddressChange () =>
-        console.log "---handled address change"
         @handleSubmit(done)
   addTmpListing: (listing, callback) =>
     callback ||= ->
@@ -185,9 +184,6 @@ class OfficeListPresenter
       listing.view.handleMarkerClick()
       callback()
   handleListingChange: (listing) =>
-    console.log "listing.view is "
-    console.log listing
-    console.log listing.view
     listing.view.renderBubble()
   handleNotesChange: (notes, cb=->) =>
     if not @tempListing then return cb()
