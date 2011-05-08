@@ -110,7 +110,6 @@ class Listing extends Backbone.Model
       @setYoutube attrs['youtube']
     super
   setYoutube: (embed) =>
-    alert "jsut set youtube"
     @youtubeParser = new YoutubeParser embed
      
   
@@ -129,11 +128,16 @@ class ListingView extends Backbone.View
 # cant figure out how to make the info window bubble bigger.. canvas sutff?
 
   getBubbleContent: () =>
+      if @model.youtubeParser?.getBigImage()
+        image = "<img src=\"#{@model.youtubeParser.getBigImage()}\" />"
+      else
+        image = ""
+
       """
       <div data-cid="#{@model.cid}" data-id="#{@model.id}">
         #{@model.get('address')}
         <div class="youtube">
-          <img src="#{@model.youtubeParser.getBigImage()}" />
+         #{image} 
         </div>
         <br />
         <div class="notes">

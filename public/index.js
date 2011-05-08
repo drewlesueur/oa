@@ -204,7 +204,6 @@ Listing = (function() {
     return Listing.__super__.set.apply(this, arguments);
   };
   Listing.prototype.setYoutube = function(embed) {
-    alert("jsut set youtube");
     return this.youtubeParser = new YoutubeParser(embed);
   };
   return Listing;
@@ -223,7 +222,13 @@ ListingView = (function() {
     return this.bubble.setContent(this.getBubbleContent());
   };
   ListingView.prototype.getBubbleContent = function() {
-    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n    <img src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    var image, _ref;
+    if ((_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0) {
+      image = "<img src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />";
+    } else {
+      image = "";
+    }
+    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
