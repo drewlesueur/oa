@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, liteAlert;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, liteAlert;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -10,6 +10,26 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 liteAlert = function(message) {
   return console.log(message);
 };
+YoutubeParser = (function() {
+  YoutubeParser.prototype.exampleEmbed = '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>';
+  function YoutubeParser(youtubeEmbed) {
+    this.getBigImage = __bind(this.getBigImage, this);;
+    this.getLittleImage = __bind(this.getLittleImage, this);;    var matches;
+    this.embed = youtubeEmbed;
+    matches = this.embed.match(/embed\/([^\"]*)"/);
+    this.id = matches[1];
+  }
+  YoutubeParser.prototype.getLittleImage = function(numb) {
+    if (!_.isNumber(numb)) {
+      numb = 1;
+    }
+    return "http://img.youtube.com/vi/" + this.id + "/" + numb + ".jpg";
+  };
+  YoutubeParser.prototype.getBigImage = function() {
+    return "http://img.youtube.com/vi/" + this.id + "/0.jpg";
+  };
+  return YoutubeParser;
+})();
 _.each(['s'], function(method) {
   return Backbone.Collection.prototype[method] = function() {
     return _[method].apply(_, [this.models].concat(_.toArray(arguments)));
@@ -19,8 +39,8 @@ GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
     this.lookup = __bind(this.lookup, this);;
-    this.handleDoneReloading = __bind(this.handleDoneReloading, this);;
-    this.reloadListings = __bind(this.reloadListings, this);;
+    this.hideReloading = __bind(this.hideReloading, this);;
+    this.displayReloading = __bind(this.displayReloading, this);;
     this.removeListing = __bind(this.removeListing, this);;
     this.removeListings = __bind(this.removeListings, this);;
     this.addListings = __bind(this.addListings, this);;
@@ -29,7 +49,8 @@ GoogleMap = (function() {
     this.triggerNotesChange = __bind(this.triggerNotesChange, this);;
     this.clearFields = __bind(this.clearFields, this);;
     this.triggerAddressChange = __bind(this.triggerAddressChange, this);;
-    this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);;    this.el = $(this.make("div"));
+    this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);;
+    this.triggerReload = __bind(this.triggerReload, this);;    this.el = $(this.make("div"));
     this.el.css({
       width: screen.availWidth - 300 + "px",
       height: window.innerHeight + "px"
@@ -50,7 +71,16 @@ GoogleMap = (function() {
     $("#youtube").keyup(__bind(function() {
       return this.triggerYoutubeChange();
     }, this));
+    $('#reload').click(__bind(function() {
+      return this.triggerReload();
+    }, this));
   }
+  GoogleMap.prototype.triggerReload = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return this.trigger("reload", cb);
+  };
   GoogleMap.prototype.triggerYoutubeChange = function(cb) {
     if (cb == null) {
       cb = function() {};
@@ -85,7 +115,8 @@ GoogleMap = (function() {
     listing.view.marker = marker;
     marker.setMap(this.map);
     bubble = new google.maps.InfoWindow({
-      content: listing.view.getBubbleContent()
+      content: listing.view.getBubbleContent(),
+      zIndex: 999999
     });
     listing.view.bubble = bubble;
     return google.maps.event.addListener(marker, 'click', function() {
@@ -126,10 +157,10 @@ GoogleMap = (function() {
     }
     return (_ref2 = listing.view.bubble) != null ? _ref2.setMap(null) : void 0;
   };
-  GoogleMap.prototype.reloadListings = function() {
+  GoogleMap.prototype.displayReloading = function() {
     return $('#reload-text').text("Reloading...");
   };
-  GoogleMap.prototype.handleDoneReloading = function() {
+  GoogleMap.prototype.hideReloading = function() {
     return $('#reload-text').text("");
   };
   GoogleMap.prototype.lookup = function(address, done) {
@@ -150,27 +181,31 @@ GoogleMap = (function() {
 Listing = (function() {
   __extends(Listing, Backbone.Model);
   function Listing() {
-    Listing.__super__.constructor.apply(this, arguments);
+    this.setYoutube = __bind(this.setYoutube, this);;    Listing.__super__.constructor.apply(this, arguments);
   }
+  Listing.prototype.setYoutube = function(embed) {
+    this.youtubeParser = new youtubeParser(embed);
+    return this.set({
+      youtube: embed
+    });
+  };
   return Listing;
 })();
 ListingView = (function() {
   __extends(ListingView, Backbone.View);
   function ListingView() {
-    this.getBubbleInnerContent = __bind(this.getBubbleInnerContent, this);;
     this.getBubbleContent = __bind(this.getBubbleContent, this);;
-    this.renderBubble = __bind(this.renderBubble, this);;    ListingView.__super__.constructor.apply(this, arguments);
+    this.renderBubble = __bind(this.renderBubble, this);;
+    this.getBubbleDiv = __bind(this.getBubbleDiv, this);;    ListingView.__super__.constructor.apply(this, arguments);
   }
+  ListingView.prototype.getBubbleDiv = function() {
+    return $("[data-cid=\"" + this.model.cid + "\"]");
+  };
   ListingView.prototype.renderBubble = function() {
-    var bubbleDiv;
-    bubbleDiv = $("[data-cid=\"" + this.model.cid + "\"]");
-    return bubbleDiv.html(this.getBubbleInnerContent());
+    return this.bubble.setContent(this.getBubbleContent());
   };
   ListingView.prototype.getBubbleContent = function() {
-    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.getBubbleInnerContent()) + "\n </div>";
-  };
-  ListingView.prototype.getBubbleInnerContent = function() {
-    return " \n" + (this.model.get('address')) + "\n<div class=\"youtube\">\n  " + (this.model.get('youtube')) + "\n</div>\n<br />\n<div class=\"notes\">\n  " + (this.model.get('notes')) + "\n</div>";
+    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n    " + (this.model.get('youtube')) + "\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -230,21 +265,27 @@ OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleAddedListing = function(listing) {
     return this.handleRefreshedListing(listing);
   };
-  OfficeListPresenter.prototype.handleReload = function() {
+  OfficeListPresenter.prototype.handleReload = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
     this.map.removeListings(this.listings.models);
     this.listings.fetch({
       success: __bind(function() {
-        return this.map.handleDoneReloading();
+        this.map.hideReloading();
+        return cb();
       }, this)
     });
-    return this.map.reloadListings();
+    return this.map.displayReloading();
   };
   OfficeListPresenter.prototype.handleSubmit = function(done) {
     return this.addListing(this.tempListing, done);
   };
   OfficeListPresenter.prototype.addListing = function(listing, done) {
+    if (done == null) {
+      done = function() {};
+    }
     listing || (listing = this.tempListing);
-    done || (done = function() {});
     if (listing) {
       if (!listing.collection) {
         this.listings.add(listing);
@@ -261,9 +302,7 @@ OfficeListPresenter = (function() {
       listing.view.handleMarkerClick();
       return done();
     } else {
-      return app.map.triggerAddressChange(__bind(function() {
-        return this.handleSubmit(done);
-      }, this));
+      return this.trigger("error", "no temporary listing");
     }
   };
   OfficeListPresenter.prototype.addTmpListing = function(listing, callback) {
@@ -306,7 +345,7 @@ OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleListingChange = function(listing) {
     return listing.view.renderBubble();
   };
-  OfficeListPresenter.prototype.handleNotesChange = function(notes, cb) {
+  OfficeListPresenter.prototype.handleAppNotesChange = function(notes, cb) {
     if (cb == null) {
       cb = function() {};
     }
@@ -318,21 +357,19 @@ OfficeListPresenter = (function() {
     });
     return cb();
   };
-  OfficeListPresenter.prototype.handleYoutubeChange = function(youtube, cb) {
+  OfficeListPresenter.prototype.handleAppYoutubeChange = function(youtube, cb) {
     if (cb == null) {
       cb = function() {};
     }
     if (!this.tempListing) {
       return cb();
     }
-    this.tempListing.set({
-      youtube: youtube
-    });
+    this.tempListing.setYoutube(youtube);
     return cb();
   };
   function OfficeListPresenter() {
-    this.handleYoutubeChange = __bind(this.handleYoutubeChange, this);;
-    this.handleNotesChange = __bind(this.handleNotesChange, this);;
+    this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
+    this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
     this.handleListingChange = __bind(this.handleListingChange, this);;
     this.addTmpListing = __bind(this.addTmpListing, this);;
     this.addListing = __bind(this.addListing, this);;
@@ -341,11 +378,11 @@ OfficeListPresenter = (function() {
     this.handleAddedListing = __bind(this.handleAddedListing, this);;
     this.handleRefreshedListing = __bind(this.handleRefreshedListing, this);;
     this.handleRefreshedListings = __bind(this.handleRefreshedListings, this);;    var onLoc, _ref;
+    _.extend(this, Backbone.Events);
     $('#listing-form').submit(__bind(function(e) {
       e.preventDefault();
       return this.handleSubmit();
     }, this));
-    $('#reload').click(this.handleReload);
     this.officeListController = new OfficeListController;
     Backbone.history.start();
     this.map = new GoogleMap();
@@ -354,8 +391,9 @@ OfficeListPresenter = (function() {
     this.listings.bind("add", this.handleAddedListing);
     this.listings.fetch();
     this.map.bind("addresschange", this.addTmpListing);
-    this.map.bind("noteschange", this.handleNotesChange);
-    this.map.bind("youtubechange", this.handleYoutubeChange);
+    this.map.bind("noteschange", this.handleAppNotesChange);
+    this.map.bind("youtubechange", this.handleAppYoutubeChange);
+    this.map.bind("reload", this.handleReload);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

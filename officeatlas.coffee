@@ -1,16 +1,28 @@
 config = require './config.coffee'
 Client = require('mysql').Client
-client = new Client
 _ = require "underscore"
 require("drews-mixins") _
 MySqlHelper = require("mysql-helper").MySqlHelper
+
+# reconnect 1 second after the connection closes
+
+Client.prototype.makeLastingConnection = () ->
+  console.log "trying to make a lasting connection"
+  console.log @constructor.toString()
+  @connect () =>
+    @_connection.on "close", () =>
+      _.wait 1000, () => @makeLastingConnection()
+
+  
+client = new Client
+
 db = new MySqlHelper client
 
 
 client.host = 'drew.the.tl'
 client.user = config.user
 client.password = config.password
-client.connect()
+client.makeLastingConnection()
 client.query("Use #{config.db};")
 
 
@@ -29,6 +41,9 @@ app.configure 'development', () ->
 
 app.configure 'production', () ->
   app.use(express.errorHandler()); 
+
+
+
 
 # Routes
 

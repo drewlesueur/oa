@@ -1,6 +1,20 @@
 liteAlert = (message) ->
   console.log message
 
+class YoutubeParser
+  exampleEmbed: '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
+  constructor: (youtubeEmbed) ->
+    @embed = youtubeEmbed
+    matches = @embed.match /embed\/([^\"]*)"/
+    @id = matches[1]
+  getLittleImage: (numb) =>
+    if not _.isNumber(numb) then numb = 1
+    "http://img.youtube.com/vi/#{@id}/#{numb}.jpg"
+  getBigImage: () =>
+    "http://img.youtube.com/vi/#{@id}/0.jpg"
+ 
+    
+
 _.each ['s'], (method) ->
   Backbone.Collection.prototype[method] = () ->
     return _[method].apply _, [this.models].concat _.toArray arguments
@@ -23,6 +37,9 @@ class GoogleMap extends Backbone.View
     #$("#notes").typed () => @triggerNotesChange()
     $("#notes").keyup () => @triggerNotesChange()
     $("#youtube").keyup () => @triggerYoutubeChange()
+    $('#reload').click () => @triggerReload()
+  triggerReload: (cb=->) =>
+    @trigger "reload", cb
   triggerYoutubeChange: (cb=->) =>
     @trigger "youtubechange", $('#youtube').val(), cb
       
@@ -47,6 +64,8 @@ class GoogleMap extends Backbone.View
     marker.setMap @map
     bubble = new google.maps.InfoWindow
       content: listing.view.getBubbleContent()
+      zIndex: 999999
+
     listing.view.bubble = bubble
 
     google.maps.event.addListener marker, 'click', () ->
@@ -65,9 +84,9 @@ class GoogleMap extends Backbone.View
   removeListing: (listing) =>
     listing.view.marker?.setMap null
     listing.view.bubble?.setMap null
-  reloadListings: () =>
+  displayReloading: () =>
     $('#reload-text').text "Reloading..."
-  handleDoneReloading: () =>
+  hideReloading: () =>
     $('#reload-text').text ""
   lookup: (address, done) =>
     geocoder = new google.maps.Geocoder()
@@ -80,28 +99,36 @@ class GoogleMap extends Backbone.View
 class Listing extends Backbone.Model
   constructor: () ->
     super
+  setYoutube: (embed) =>
+    @youtubeParser = new youtubeParser embed
+    @set youtube: embed
+     
   
 class ListingView extends Backbone.View
   constructor: () ->
     super
+  getBubbleDiv: () =>
+    $("[data-cid=\"#{@model.cid}\"]")
   renderBubble: () =>
-     bubbleDiv = $("[data-cid=\"#{@model.cid}\"]")
-     bubbleDiv.html @getBubbleInnerContent()
+     
+     @bubble.setContent @getBubbleContent()
+
+#appending do body first didnt work. I wanted it to work for chrome. does for safart
+# waiting also works for safari (need to set the width height though)
+# tried appending after, makes it small but works, then setCOntenting it, no works
+# cant figure out how to make the info window bubble bigger.. canvas sutff?
+
   getBubbleContent: () =>
       """
       <div data-cid="#{@model.cid}" data-id="#{@model.id}">
-        #{@getBubbleInnerContent()}
-       </div>
-      """
-  getBubbleInnerContent: () =>
-    """ 
-      #{@model.get('address')}
-      <div class="youtube">
-        #{@model.get('youtube')}
-      </div>
-      <br />
-      <div class="notes">
-        #{@model.get('notes')}
+        #{@model.get('address')}
+        <div class="youtube">
+          #{@model.get('youtube')}
+        </div>
+        <br />
+        <div class="notes">
+          #{@model.get('notes')}
+        </div>
       </div>
     """
   handleMarkerClick: () ->
@@ -145,15 +172,16 @@ class OfficeListPresenter
     @map.addListing listing
   handleAddedListing: (listing) =>
     @handleRefreshedListing listing
-  handleReload: () =>
+  handleReload: (cb=->) =>
     @map.removeListings @listings.models
     @listings.fetch
-      success: () => @map.handleDoneReloading()
-    @map.reloadListings()
+      success: () =>
+        @map.hideReloading()
+        cb()
+    @map.displayReloading()
   handleSubmit: (done) => @addListing(@tempListing, done)
-  addListing: (listing, done) => 
+  addListing: (listing, done=->) => 
     listing ||= @tempListing
-    done ||= ->
     if listing
       if not listing.collection
         @listings.add listing
@@ -165,8 +193,7 @@ class OfficeListPresenter
       listing.view.handleMarkerClick()
       done()
     else
-      app.map.triggerAddressChange () =>
-        @handleSubmit(done)
+      @trigger "error", "no temporary listing"
   addTmpListing: (listing, callback) =>
     callback ||= ->
     if listing.constructor isnt Listing
@@ -193,19 +220,20 @@ class OfficeListPresenter
       callback()
   handleListingChange: (listing) =>
     listing.view.renderBubble()
-  handleNotesChange: (notes, cb=->) =>
+  handleAppNotesChange: (notes, cb=->) =>
     if not @tempListing then return cb()
     @tempListing.set notes: notes
     cb()
-  handleYoutubeChange: (youtube, cb=->) =>
+  handleAppYoutubeChange: (youtube, cb=->) =>
     if not @tempListing then return cb()
-    @tempListing.set youtube: youtube
+    @tempListing.setYoutube youtube
+
     cb()
   constructor: () ->
+    _.extend @, Backbone.Events
     $('#listing-form').submit (e) =>
       e.preventDefault()
       @handleSubmit()
-    $('#reload').click @handleReload
 
     @officeListController = new OfficeListController
     Backbone.history.start()
@@ -217,8 +245,9 @@ class OfficeListPresenter
     @listings.bind "add", @handleAddedListing
     @listings.fetch()
     @map.bind "addresschange", @addTmpListing
-    @map.bind "noteschange", @handleNotesChange
-    @map.bind "youtubechange", @handleYoutubeChange
+    @map.bind "noteschange", @handleAppNotesChange
+    @map.bind "youtubechange", @handleAppYoutubeChange
+    @map.bind "reload", @handleReload
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

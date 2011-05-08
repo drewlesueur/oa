@@ -51,44 +51,47 @@ test "I should see the info bubble when clicking on the marker", (done) ->
 
 
 savingAListing = (done) ->
-  $('#address').val "1465 E. Halifax St, Mesa, AZ 85203"
-  $('#notes').val "These notes are my own"
-  #$('#listing-form').submit()
-  app.handleSubmit () ->
-    "address field should be empty"
-    _.assertEqual $('#notes').val(), "",
-    "Notes field should be empty"
-    _.assertEqual $('#lat').val(), "",
-    "Notes field should be empty"
-    _.assertEqual $('#lng').val(), "",
-    "Notes field should be empty"
-    latlng = map.getCenter()
-    _.assertClose latlng.lat(), 33.44187, .01
-    "Latitude should change when adding a listing"
+  app.addTmpListing
+    address: "1465 E. Halifax St, Mesa, AZ 85203"
+    notes:  "These notes are my own"
+  , () ->
+    console.log "done adding temporary listing"
+    console.log app.tempListing
+    app.handleSubmit () ->
+      "address field should be empty"
+      _.assertEqual $('#notes').val(), "",
+      "Notes field should be empty"
+      _.assertEqual $('#lat').val(), "",
+      "Notes field should be empty"
+      _.assertEqual $('#lng').val(), "",
+      "Notes field should be empty"
+      latlng = map.getCenter()
+      _.assertClose latlng.lat(), 33.44187, .01
+      "Latitude should change when adding a listing"
 
-    _.assertClose latlng.lng(), -111.798698, 0.1
-    "Longitutde should change when adding a listing"
+      _.assertClose latlng.lng(), -111.798698, 0.1
+      "Longitutde should change when adding a listing"
 
-    _.assertEqual map.getZoom(), 13, 
-    "Should zoom in when adding a listing"
+      _.assertEqual map.getZoom(), 13, 
+      "Should zoom in when adding a listing"
+      
+      
+      newListings = listingModels.filter (listing) ->
+        return listing.get('notes') == "These notes are my own"
 
-    
-    newListings = listingModels.filter (listing) ->
-      return listing.get('notes') == "These notes are my own"
-    _.assertEqual newListings.length, 1, 
-    "New listing should be added"
-    _.assertSee "These notes are my own"
+      _.assertEqual newListings.length, 1, 
+      "New listing should be added"
+      _.assertSee "These notes are my own"
 
-    oldListings = _.map _.clone(app.listings.models), (model) -> model.attributes.address
+      oldListings = _.map _.clone(app.listings.models), (model) -> model.attributes.address
 
-    $('#reload').click()
-    _.assertSee "Reloading"
-    _.wait 1000, () ->
-      newListings = _.map app.listings.models, (model) -> model.attributes.address
-      _.assertEqual _.isEqual(oldListings, newListings), 1,
-      "Listings should be reloaded"
-      _.assertNoSee "Reloading"
-      done()
+      app.map.triggerReload () ->
+        newListings = _.map app.listings.models, (model) -> model.attributes.address
+        _.assertEqual _.isEqual(oldListings, newListings), 1,
+        "Listings should be reloaded"
+        _.assertNoSee "Reloading"
+        done()
+      _.assertSee "Reloading"
 
 
 cleanDb = (done) ->
@@ -96,7 +99,8 @@ cleanDb = (done) ->
     done()
 
 test "I should be able to save", (done) -> 
-  _.series [cleanDb, savingAListing, cleanDb], () -> done()
+  _.series [cleanDb, savingAListing], () -> done()
+  #_.series [cleanDb, savingAListing, cleanDb], () -> done()
 
 
 
@@ -146,13 +150,20 @@ test "should be able to add youtube video", (done) ->
     notes: ""
     youtube: ""
   , () ->
-    $('#youtube').val '<iframe width="425" height="349" src="http://www.youtube.com/embed/UmFjNiiVk9w" frameborder="0" allowfullscreen></iframe>'
+    $('#youtube').val '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
     app.map.triggerYoutubeChange()
-    _.assertOk $('.notes:contains(testing notes)').length, 1,
-    "notes should update on change"
+    _.assertTrue $('.youtube img:visible').src "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
     done()
-  
- 
+
+test "Youtube parser", (done) ->
+  y = new YoutubeParser('<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>')
+  _.assertEqual y.id, "H1G2YnKanWs"
+  _.assertEqual y.getBigImage(), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
+  _.assertEqual y.getLittleImage(1), "http://img.youtube.com/vi/H1G2YnKanWs/1.jpg"
+  _.assertEqual y.getLittleImage(2), "http://img.youtube.com/vi/H1G2YnKanWs/2.jpg"
+  _.assertEqual y.getLittleImage(3), "http://img.youtube.com/vi/H1G2YnKanWs/3.jpg"
+  _.assertEqual y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
+  done()
     
 test "add listing using app.addListing", (done) ->
   done()
@@ -187,28 +198,39 @@ testsComplete = (err, results) ->
     #{_.getPassCount()} tests passed
     #{_.getFailCount()} tests failed
   """
+  _.setAssertCount 0
+  _.setPassCount 0
+  _.setFailCount 0
 
   $('#test-text').html results.replace /\n/g, "<br />"
   console.log results
+
+getTestLink = (test) ->
+  "#tests/#{test.replace(/\s/g, '_')}"
   
 $(document).ready () ->
   _.each tests, (val, key) ->
-    $('#tests').append $ "<div><a href=\"#tests/#{key.replace(/\s/g, '_')}\">#{key}</a></div>"
+    $('#tests').append $ "<div><a href='#{getTestLink(key)}'>#{key}</div>"
+
+preRun = () ->
+  app.bind "error", (err) ->
+    console.log "ERROR! #{err}"
+  listingModels = app.listings.models
+  map = app.map.map
+
 
 runTest = (testName) ->
   testName = testName.replace /_/g, " "
   _.wait 1000, () ->
-    listingModels = app.listings.models
-    map = app.map.map
+    preRun()
     _.series [tests[testName]], testsComplete
   
 runTests = () ->
   _.wait 1000, () ->
-    listingModels = app.listings.models
-    map = app.map.map
+    preRun()
     newTests = {}
     _.each tests, (test, key) ->
       newTests[key] = (done) -> 
-        console.log key
+        console.log key + " http://office.the.tl/#{getTestLink(key)}"
         test(done)
     _.series newTests, testsComplete
