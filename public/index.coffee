@@ -6,11 +6,16 @@ class YoutubeParser
   constructor: (youtubeEmbed) ->
     @embed = youtubeEmbed
     matches = @embed.match /embed\/([^\"]*)"/
+    if not matches
+      @id = null
+      return
     @id = matches[1]
   getLittleImage: (numb) =>
+    if not @id then return null
     if not _.isNumber(numb) then numb = 1
     "http://img.youtube.com/vi/#{@id}/#{numb}.jpg"
   getBigImage: () =>
+    if not @id then return null
     "http://img.youtube.com/vi/#{@id}/0.jpg"
  
     
@@ -99,9 +104,14 @@ class GoogleMap extends Backbone.View
 class Listing extends Backbone.Model
   constructor: () ->
     super
+  set: (args...) =>
+    attrs = args[0]
+    if "youtube" of attrs
+      @setYoutube attrs['youtube']
+    super
   setYoutube: (embed) =>
-    @youtubeParser = new youtubeParser embed
-    @set youtube: embed
+    alert "jsut set youtube"
+    @youtubeParser = new YoutubeParser embed
      
   
 class ListingView extends Backbone.View
@@ -123,7 +133,7 @@ class ListingView extends Backbone.View
       <div data-cid="#{@model.cid}" data-id="#{@model.id}">
         #{@model.get('address')}
         <div class="youtube">
-          #{@model.get('youtube')}
+          <img src="#{@model.youtubeParser.getBigImage()}" />
         </div>
         <br />
         <div class="notes">
@@ -203,6 +213,7 @@ class OfficeListPresenter
       @map.removeListing model
     listing.bind "change:notes", () => @handleListingChange listing
     listing.bind "change:youtube", () => @handleListingChange listing
+
     @map.lookup listing.get('address'), (err, results) =>
       if err 
         liteAlert "Error getting address"
@@ -226,7 +237,7 @@ class OfficeListPresenter
     cb()
   handleAppYoutubeChange: (youtube, cb=->) =>
     if not @tempListing then return cb()
-    @tempListing.setYoutube youtube
+    @tempListing.set youtube: youtube
 
     cb()
   constructor: () ->

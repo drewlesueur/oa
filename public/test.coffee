@@ -99,8 +99,7 @@ cleanDb = (done) ->
     done()
 
 test "I should be able to save", (done) -> 
-  _.series [cleanDb, savingAListing], () -> done()
-  #_.series [cleanDb, savingAListing, cleanDb], () -> done()
+  _.series [cleanDb, savingAListing, cleanDb], () -> done()
 
 
 
@@ -163,6 +162,13 @@ test "Youtube parser", (done) ->
   _.assertEqual y.getLittleImage(2), "http://img.youtube.com/vi/H1G2YnKanWs/2.jpg"
   _.assertEqual y.getLittleImage(3), "http://img.youtube.com/vi/H1G2YnKanWs/3.jpg"
   _.assertEqual y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
+
+  t = new YoutubeParser ''
+  _.assertEqual t.id null
+  _.assertEqual y.getBigImage(), null
+  _.assertEqual y.getLittleImage(1), null
+  _.assertEqual y.getLittleImage(2), null
+  _.assertEqual y.getLittleImage(3), null
   done()
     
 test "add listing using app.addListing", (done) ->

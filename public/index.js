@@ -6,7 +6,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   child.prototype = new ctor;
   child.__super__ = parent.prototype;
   return child;
-};
+}, __slice = Array.prototype.slice;
 liteAlert = function(message) {
   return console.log(message);
 };
@@ -17,15 +17,25 @@ YoutubeParser = (function() {
     this.getLittleImage = __bind(this.getLittleImage, this);;    var matches;
     this.embed = youtubeEmbed;
     matches = this.embed.match(/embed\/([^\"]*)"/);
+    if (!matches) {
+      this.id = null;
+      return;
+    }
     this.id = matches[1];
   }
   YoutubeParser.prototype.getLittleImage = function(numb) {
+    if (!this.id) {
+      return null;
+    }
     if (!_.isNumber(numb)) {
       numb = 1;
     }
     return "http://img.youtube.com/vi/" + this.id + "/" + numb + ".jpg";
   };
   YoutubeParser.prototype.getBigImage = function() {
+    if (!this.id) {
+      return null;
+    }
     return "http://img.youtube.com/vi/" + this.id + "/0.jpg";
   };
   return YoutubeParser;
@@ -181,13 +191,21 @@ GoogleMap = (function() {
 Listing = (function() {
   __extends(Listing, Backbone.Model);
   function Listing() {
-    this.setYoutube = __bind(this.setYoutube, this);;    Listing.__super__.constructor.apply(this, arguments);
+    this.setYoutube = __bind(this.setYoutube, this);;
+    this.set = __bind(this.set, this);;    Listing.__super__.constructor.apply(this, arguments);
   }
+  Listing.prototype.set = function() {
+    var args, attrs;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    attrs = args[0];
+    if ("youtube" in attrs) {
+      this.setYoutube(attrs['youtube']);
+    }
+    return Listing.__super__.set.apply(this, arguments);
+  };
   Listing.prototype.setYoutube = function(embed) {
-    this.youtubeParser = new youtubeParser(embed);
-    return this.set({
-      youtube: embed
-    });
+    alert("jsut set youtube");
+    return this.youtubeParser = new YoutubeParser(embed);
   };
   return Listing;
 })();
@@ -205,7 +223,7 @@ ListingView = (function() {
     return this.bubble.setContent(this.getBubbleContent());
   };
   ListingView.prototype.getBubbleContent = function() {
-    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n    " + (this.model.get('youtube')) + "\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n    <img src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -364,7 +382,9 @@ OfficeListPresenter = (function() {
     if (!this.tempListing) {
       return cb();
     }
-    this.tempListing.setYoutube(youtube);
+    this.tempListing.set({
+      youtube: youtube
+    });
     return cb();
   };
   function OfficeListPresenter() {
