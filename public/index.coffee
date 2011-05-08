@@ -116,11 +116,45 @@ class Listing extends Backbone.Model
 class ListingView extends Backbone.View
   constructor: () ->
     super
+  triggerYoutubeImageClick: (cb=->) =>
+    #@trigger "youtubeimageclick", @listing
+    #why trigger on just the listing
+    # isn't it simpler to trigger on the apps view (in this case 's map)
+
+    #app.map.trigger "youtubeimageclick", @listing
+    # or why even trigger at all. this is black boxed
+    @swapImageWithVideo()
+  swapImageWithVideo: (cb=->) =>
+    iframe = $ @model.youtubeParser.embed
+    img = @getBubbleDiv().find('img')
+    iframe.css 
+      display: "none"
+      position: "absolute"
+      top: 0
+      left: 0
+
+    $(document.body).append iframe
+
+    console.log img.length
+    _.wait 500, () ->
+      console.log "offset"
+      console.log img.offset()
+      iframe.css
+        display: "block"
+        top: img.offset().top + "px"
+        left: img.offset().left + "px"
+      cb()
+
+
+    
   getBubbleDiv: () =>
     $("[data-cid=\"#{@model.cid}\"]")
   renderBubble: () =>
-     
-     @bubble.setContent @getBubbleContent()
+    @bubble.setContent @getBubbleContent()
+
+    @getBubbleDiv().find("img.thumbnail").click () =>
+      console.log "Click"
+      @triggerYoutubeImageClick()
 
 #appending do body first didnt work. I wanted it to work for chrome. does for safart
 # waiting also works for safari (need to set the width height though)
@@ -128,23 +162,25 @@ class ListingView extends Backbone.View
 # cant figure out how to make the info window bubble bigger.. canvas sutff?
 
   getBubbleContent: () =>
-      if @model.youtubeParser?.getBigImage()
-        image = "<img src=\"#{@model.youtubeParser.getBigImage()}\" />"
-      else
-        image = ""
-
-      """
-      <div data-cid="#{@model.cid}" data-id="#{@model.id}">
-        #{@model.get('address')}
-        <div class="youtube">
-         #{image} 
-        </div>
-        <br />
-        <div class="notes">
-          #{@model.get('notes')}
-        </div>
+    if @model.youtubeParser?.getBigImage()
+      image = "<img class=\"thumbnail\" src=\"#{@model.youtubeParser.getBigImage()}\" />"
+    else
+      image = ""
+    str = """
+    <div style="position: relative;" data-cid="#{@model.cid}" data-id="#{@model.id}">
+      <div class="bubble-position"></div>
+      #{@model.get('address')}
+      <div class="youtube">
+       #{image} 
       </div>
+      <br />
+      <div class="notes">
+        #{@model.get('notes')}
+      </div>
+    </div>
     """
+    $(str)[0]
+    
   handleMarkerClick: () ->
     if @bubbleState == "open"
       @bubble.close()
@@ -244,6 +280,8 @@ class OfficeListPresenter
     @tempListing.set youtube: youtube
 
     cb()
+  handleListingYoutubeImageClick: (listing, cb=->) =>
+    listing.view.swapImageWithVideo cb
   constructor: () ->
     _.extend @, Backbone.Events
     $('#listing-form').submit (e) =>
@@ -263,6 +301,7 @@ class OfficeListPresenter
     @map.bind "noteschange", @handleAppNotesChange
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
+    @map.bind "yotubeimageclick", @handleListingYoutubeImageClick
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

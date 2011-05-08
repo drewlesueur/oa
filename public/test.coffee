@@ -151,10 +151,20 @@ test "should be able to add youtube video", (done) ->
   , () ->
     $('#youtube').val '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
     app.map.triggerYoutubeChange()
-    _.wait 1000, () ->
-      _.assertOk $('.youtube img:visible').attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
+    _.assertOk $('.youtube img:visible').attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
+    done()
+test "should be able to play a you tube video", (done) ->
+  listing = app.addTmpListing
+    address: "scottsdale, az"
+    youtube: '<iframe width="425" height="349" src="http://www.youtube.com/embed/_OBlgSz8sSM" frameborder="0" allowfullscreen></iframe>'
+  , () ->
+    app.tempListing.view.triggerYoutubeImageClick () ->
+      _.assertOk app.tempListing.view.getBubbleDiv().find("iframe").length == 1, "should have iframe youtube video"
       done()
+    
 
+
+  
 test "Youtube parser", (done) ->
   y = new YoutubeParser('<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>')
   _.assertEqual y.id, "H1G2YnKanWs"
@@ -166,10 +176,10 @@ test "Youtube parser", (done) ->
 
   t = new YoutubeParser ''
   _.assertEqual t.id, null
-  _.assertEqual y.getBigImage(), null
-  _.assertEqual y.getLittleImage(1), null
-  _.assertEqual y.getLittleImage(2), null
-  _.assertEqual y.getLittleImage(3), null
+  _.assertEqual t.getBigImage(), null
+  _.assertEqual t.getLittleImage(1), null
+  _.assertEqual t.getLittleImage(2), null
+  _.assertEqual t.getLittleImage(3), null
   done()
     
 test "add listing using app.addListing", (done) ->

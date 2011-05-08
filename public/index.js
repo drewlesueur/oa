@@ -213,22 +213,61 @@ ListingView = (function() {
   function ListingView() {
     this.getBubbleContent = __bind(this.getBubbleContent, this);;
     this.renderBubble = __bind(this.renderBubble, this);;
-    this.getBubbleDiv = __bind(this.getBubbleDiv, this);;    ListingView.__super__.constructor.apply(this, arguments);
+    this.getBubbleDiv = __bind(this.getBubbleDiv, this);;
+    this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);;
+    this.triggerYoutubeImageClick = __bind(this.triggerYoutubeImageClick, this);;    ListingView.__super__.constructor.apply(this, arguments);
   }
+  ListingView.prototype.triggerYoutubeImageClick = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return this.swapImageWithVideo();
+  };
+  ListingView.prototype.swapImageWithVideo = function(cb) {
+    var iframe, img;
+    if (cb == null) {
+      cb = function() {};
+    }
+    iframe = $(this.model.youtubeParser.embed);
+    img = this.getBubbleDiv().find('img');
+    iframe.css({
+      display: "none",
+      position: "absolute",
+      top: 0,
+      left: 0
+    });
+    $(document.body).append(iframe);
+    console.log(img.length);
+    return _.wait(500, function() {
+      console.log("offset");
+      console.log(img.offset());
+      iframe.css({
+        display: "block",
+        top: img.offset().top + "px",
+        left: img.offset().left + "px"
+      });
+      return cb();
+    });
+  };
   ListingView.prototype.getBubbleDiv = function() {
     return $("[data-cid=\"" + this.model.cid + "\"]");
   };
   ListingView.prototype.renderBubble = function() {
-    return this.bubble.setContent(this.getBubbleContent());
+    this.bubble.setContent(this.getBubbleContent());
+    return this.getBubbleDiv().find("img.thumbnail").click(__bind(function() {
+      console.log("Click");
+      return this.triggerYoutubeImageClick();
+    }, this));
   };
   ListingView.prototype.getBubbleContent = function() {
-    var image, _ref;
+    var image, str, _ref;
     if ((_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0) {
-      image = "<img src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />";
+      image = "<img class=\"thumbnail\" src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />";
     } else {
       image = "";
     }
-    return "<div data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    str = "<div style=\"position: relative;\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    return $(str)[0];
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -392,7 +431,14 @@ OfficeListPresenter = (function() {
     });
     return cb();
   };
+  OfficeListPresenter.prototype.handleListingYoutubeImageClick = function(listing, cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return listing.view.swapImageWithVideo(cb);
+  };
   function OfficeListPresenter() {
+    this.handleListingYoutubeImageClick = __bind(this.handleListingYoutubeImageClick, this);;
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
     this.handleListingChange = __bind(this.handleListingChange, this);;
@@ -419,6 +465,7 @@ OfficeListPresenter = (function() {
     this.map.bind("noteschange", this.handleAppNotesChange);
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
+    this.map.bind("yotubeimageclick", this.handleListingYoutubeImageClick);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

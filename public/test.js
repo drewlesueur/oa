@@ -151,8 +151,18 @@ test("should be able to add youtube video", function(done) {
   }, function() {
     $('#youtube').val('<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
     app.map.triggerYoutubeChange();
-    return _.wait(1000, function() {
-      _.assertOk($('.youtube img:visible').attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg");
+    _.assertOk($('.youtube img:visible').attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg");
+    return done();
+  });
+});
+test("should be able to play a you tube video", function(done) {
+  var listing;
+  return listing = app.addTmpListing({
+    address: "scottsdale, az",
+    youtube: '<iframe width="425" height="349" src="http://www.youtube.com/embed/_OBlgSz8sSM" frameborder="0" allowfullscreen></iframe>'
+  }, function() {
+    return app.tempListing.view.triggerYoutubeImageClick(function() {
+      _.assertOk(app.tempListing.view.getBubbleDiv().find("iframe").length === 1, "should have iframe youtube video");
       return done();
     });
   });
@@ -168,10 +178,10 @@ test("Youtube parser", function(done) {
   _.assertEqual(y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
   t = new YoutubeParser('');
   _.assertEqual(t.id, null);
-  _.assertEqual(y.getBigImage(), null);
-  _.assertEqual(y.getLittleImage(1), null);
-  _.assertEqual(y.getLittleImage(2), null);
-  _.assertEqual(y.getLittleImage(3), null);
+  _.assertEqual(t.getBigImage(), null);
+  _.assertEqual(t.getLittleImage(1), null);
+  _.assertEqual(t.getLittleImage(2), null);
+  _.assertEqual(t.getLittleImage(3), null);
   return done();
 });
 test("add listing using app.addListing", function(done) {
