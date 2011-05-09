@@ -276,14 +276,10 @@ ListingView = (function() {
     return $("[data-cid=\"" + this.model.cid + "\"]");
   };
   ListingView.prototype.renderBubble = function() {
-    this.bubble.setContent(this.getBubbleContent());
-    return this.getBubbleDiv().find("img.thumbnail").click(__bind(function() {
-      console.log("Click");
-      return this.triggerYoutubeImageClick();
-    }, this));
+    return this.bubble.setContent(this.getBubbleContent());
   };
   ListingView.prototype.getBubbleContent = function() {
-    var bigImage, image, str, width, _ref, _ref2;
+    var bigImage, content, image, str, width, _ref, _ref2;
     bigImage = (_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0;
     width = (_ref2 = this.model.youtubeParser) != null ? _ref2.width : void 0;
     if (bigImage && width) {
@@ -292,7 +288,11 @@ ListingView = (function() {
       image = "";
     }
     str = "<div style=\"position: relative;\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
-    return $(str)[0];
+    content = $(str);
+    content.find("img.thumbnail").click(__bind(function() {
+      return this.triggerYoutubeImageClick();
+    }, this));
+    return content[0];
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -456,12 +456,6 @@ OfficeListPresenter = (function() {
     });
     return cb();
   };
-  OfficeListPresenter.prototype.handleListingYoutubeImageClick = function(listing, cb) {
-    if (cb == null) {
-      cb = function() {};
-    }
-    return listing.view.swapImageWithVideo(cb);
-  };
   OfficeListPresenter.prototype.handleMapCenterChanged = function(cb) {
     if (cb == null) {
       cb = function() {};
@@ -472,7 +466,6 @@ OfficeListPresenter = (function() {
   };
   function OfficeListPresenter() {
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);;
-    this.handleListingYoutubeImageClick = __bind(this.handleListingYoutubeImageClick, this);;
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
     this.handleListingChange = __bind(this.handleListingChange, this);;
@@ -499,7 +492,6 @@ OfficeListPresenter = (function() {
     this.map.bind("noteschange", this.handleAppNotesChange);
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
-    this.map.bind("yotubeimageclick", this.handleListingYoutubeImageClick);
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({

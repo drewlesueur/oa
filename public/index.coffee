@@ -166,9 +166,6 @@ class ListingView extends Backbone.View
   renderBubble: () =>
     @bubble.setContent @getBubbleContent()
 
-    @getBubbleDiv().find("img.thumbnail").click () =>
-      console.log "Click"
-      @triggerYoutubeImageClick()
 
 #appending do body first didnt work. I wanted it to work for chrome. does for safart
 # waiting also works for safari (need to set the width height though)
@@ -176,7 +173,6 @@ class ListingView extends Backbone.View
 # cant figure out how to make the info window bubble bigger.. canvas sutff?
 
   getBubbleContent: () =>
-    
     bigImage = @model.youtubeParser?.getBigImage()
     width = @model.youtubeParser?.width
     if bigImage and width
@@ -196,8 +192,11 @@ class ListingView extends Backbone.View
       </div>
     </div>
     """
-    $(str)[0]
+    content = $(str)
+    content.find("img.thumbnail").click () =>
+      @triggerYoutubeImageClick()
     
+    content[0]
   handleMarkerClick: () ->
     if @bubbleState == "open"
       @bubble.close()
@@ -297,8 +296,6 @@ class OfficeListPresenter
     @tempListing.set youtube: youtube
 
     cb()
-  handleListingYoutubeImageClick: (listing, cb=->) =>
-    listing.view.swapImageWithVideo cb
   handleMapCenterChanged: (cb=->) =>
     if @tempListing
       @tempListing.view.removeVideo()
@@ -321,7 +318,6 @@ class OfficeListPresenter
     @map.bind "noteschange", @handleAppNotesChange
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
-    @map.bind "yotubeimageclick", @handleListingYoutubeImageClick
     @map.bind "mapcenterchanged", @handleMapCenterChanged
 
     $('#map-wrapper').append @map.el
