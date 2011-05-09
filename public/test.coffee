@@ -151,8 +151,12 @@ test "should be able to add youtube video", (done) ->
   , () ->
     $('#youtube').val '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
     app.map.triggerYoutubeChange()
-    _.assertOk $('.youtube img:visible').attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
+    img = $('.youtube img:visible') 
+    _.assertOk img.attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg"
+    _.assertEqual img.width(), 425
+    _.assertEqual img.height(), 349
     done()
+
 test "should be able to play a you tube video", (done) ->
   listing = app.addTmpListing
     address: "scottsdale, az"
@@ -173,6 +177,9 @@ test "Youtube parser", (done) ->
   _.assertEqual y.getLittleImage(2), "http://img.youtube.com/vi/H1G2YnKanWs/2.jpg"
   _.assertEqual y.getLittleImage(3), "http://img.youtube.com/vi/H1G2YnKanWs/3.jpg"
   _.assertEqual y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
+  _.assertEqual y.width, 425
+  _.assertEqual y.height, 349
+
 
   t = new YoutubeParser ''
   _.assertEqual t.id, null

@@ -14,7 +14,7 @@ YoutubeParser = (function() {
   YoutubeParser.prototype.exampleEmbed = '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>';
   function YoutubeParser(youtubeEmbed) {
     this.getBigImage = __bind(this.getBigImage, this);;
-    this.getLittleImage = __bind(this.getLittleImage, this);;    var matches;
+    this.getLittleImage = __bind(this.getLittleImage, this);;    var heightMatches, matches, widthMatches;
     this.embed = youtubeEmbed;
     matches = this.embed.match(/embed\/([^\"]*)"/);
     if (!matches) {
@@ -22,6 +22,14 @@ YoutubeParser = (function() {
       return;
     }
     this.id = matches[1];
+    widthMatches = this.embed.match(/width="(\d+)"/);
+    heightMatches = this.embed.match(/height="(\d+)"/);
+    if (widthMatches) {
+      this.width = widthMatches[1];
+    }
+    if (heightMatches) {
+      this.height = heightMatches[1];
+    }
   }
   YoutubeParser.prototype.getLittleImage = function(numb) {
     if (!this.id) {
@@ -60,7 +68,8 @@ GoogleMap = (function() {
     this.clearFields = __bind(this.clearFields, this);;
     this.triggerAddressChange = __bind(this.triggerAddressChange, this);;
     this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);;
-    this.triggerReload = __bind(this.triggerReload, this);;    this.el = $(this.make("div"));
+    this.triggerReload = __bind(this.triggerReload, this);;
+    this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);;    this.el = $(this.make("div"));
     this.el.css({
       width: screen.availWidth - 300 + "px",
       height: window.innerHeight + "px"
@@ -84,7 +93,17 @@ GoogleMap = (function() {
     $('#reload').click(__bind(function() {
       return this.triggerReload();
     }, this));
+    google.maps.event.addListener(this.map, "center_changed", __bind(function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.triggerMapCenterChanged.apply(this, args);
+    }, this));
   }
+  GoogleMap.prototype.triggerMapCenterChanged = function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return this.trigger("mapcenterchanged");
+  };
   GoogleMap.prototype.triggerReload = function(cb) {
     if (cb == null) {
       cb = function() {};
@@ -260,9 +279,12 @@ ListingView = (function() {
     }, this));
   };
   ListingView.prototype.getBubbleContent = function() {
-    var image, str, _ref;
-    if ((_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0) {
-      image = "<img class=\"thumbnail\" src=\"" + (this.model.youtubeParser.getBigImage()) + "\" />";
+    var bigImage, height, image, str, width, _ref, _ref2, _ref3;
+    bigImage = (_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0;
+    width = (_ref2 = this.model.youtubeParser) != null ? _ref2.width : void 0;
+    height = (_ref3 = this.model.youtubeParser) != null ? _ref3.height : void 0;
+    if (bigImage && width && height) {
+      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px; height:" + height + "px\" />";
     } else {
       image = "";
     }

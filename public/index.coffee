@@ -10,6 +10,15 @@ class YoutubeParser
       @id = null
       return
     @id = matches[1]
+    widthMatches = @embed.match(/width="(\d+)"/)
+    heightMatches = @embed.match(/height="(\d+)"/)
+    if widthMatches
+      @width = widthMatches[1]
+    if heightMatches
+      @height = heightMatches[1]
+
+
+
   getLittleImage: (numb) =>
     if not @id then return null
     if not _.isNumber(numb) then numb = 1
@@ -43,6 +52,12 @@ class GoogleMap extends Backbone.View
     $("#notes").keyup () => @triggerNotesChange()
     $("#youtube").keyup () => @triggerYoutubeChange()
     $('#reload').click () => @triggerReload()
+
+    google.maps.event.addListener @map, "center_changed", (args...) =>
+      @triggerMapCenterChanged args...
+  triggerMapCenterChanged: (args...) =>
+    @trigger "mapcenterchanged"
+  
   triggerReload: (cb=->) =>
     @trigger "reload", cb
   triggerYoutubeChange: (cb=->) =>
@@ -75,6 +90,7 @@ class GoogleMap extends Backbone.View
 
     google.maps.event.addListener marker, 'click', () ->
       listing.view.handleMarkerClick()
+
       
      
   updateCurrentBubbleNotes: (notes, cb=->) =>
@@ -162,8 +178,12 @@ class ListingView extends Backbone.View
 # cant figure out how to make the info window bubble bigger.. canvas sutff?
 
   getBubbleContent: () =>
-    if @model.youtubeParser?.getBigImage()
-      image = "<img class=\"thumbnail\" src=\"#{@model.youtubeParser.getBigImage()}\" />"
+    
+    bigImage = @model.youtubeParser?.getBigImage()
+    width = @model.youtubeParser?.width
+    height = @model.youtubeParser?.height
+    if bigImage and width and height
+      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px; height:#{height}px\" />"
     else
       image = ""
     str = """
