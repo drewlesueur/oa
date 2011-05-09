@@ -17,8 +17,6 @@ class YoutubeParser
     if heightMatches
       @height = heightMatches[1]
 
-
-
   getLittleImage: (numb) =>
     if not @id then return null
     if not _.isNumber(numb) then numb = 1
@@ -139,7 +137,10 @@ class ListingView extends Backbone.View
 
     #app.map.trigger "youtubeimageclick", @listing
     # or why even trigger at all. this is black boxed
-    @swapImageWithVideo()
+    @swapImageWithVideo cb
+
+  removeVideo: (cb=->) =>
+    $('iframe').remove()
   swapImageWithVideo: (cb=->) =>
     iframe = $ @model.youtubeParser.embed
     img = @getBubbleDiv().find('img')
@@ -151,10 +152,7 @@ class ListingView extends Backbone.View
 
     $(document.body).append iframe
 
-    console.log img.length
-    _.wait 500, () ->
-      console.log "offset"
-      console.log img.offset()
+    _.wait 10, () ->
       iframe.css
         display: "block"
         top: img.offset().top + "px"
@@ -181,9 +179,8 @@ class ListingView extends Backbone.View
     
     bigImage = @model.youtubeParser?.getBigImage()
     width = @model.youtubeParser?.width
-    height = @model.youtubeParser?.height
-    if bigImage and width and height
-      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px; height:#{height}px\" />"
+    if bigImage and width
+      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px;\" />"
     else
       image = ""
     str = """
@@ -288,7 +285,7 @@ class OfficeListPresenter
         lng: latlng.lng()
       @listings.add listing
       listing.view.handleMarkerClick()
-      callback()
+      callback null, listing
   handleListingChange: (listing) =>
     listing.view.renderBubble()
   handleAppNotesChange: (notes, cb=->) =>
@@ -302,6 +299,9 @@ class OfficeListPresenter
     cb()
   handleListingYoutubeImageClick: (listing, cb=->) =>
     listing.view.swapImageWithVideo cb
+  handleMapCenterChanged: (cb=->) =>
+    if @tempListing
+      @tempListing.view.removeVideo()
   constructor: () ->
     _.extend @, Backbone.Events
     $('#listing-form').submit (e) =>
@@ -322,6 +322,7 @@ class OfficeListPresenter
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
     @map.bind "yotubeimageclick", @handleListingYoutubeImageClick
+    @map.bind "mapcenterchanged", @handleMapCenterChanged
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css

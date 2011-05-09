@@ -234,13 +234,20 @@ ListingView = (function() {
     this.renderBubble = __bind(this.renderBubble, this);;
     this.getBubbleDiv = __bind(this.getBubbleDiv, this);;
     this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);;
+    this.removeVideo = __bind(this.removeVideo, this);;
     this.triggerYoutubeImageClick = __bind(this.triggerYoutubeImageClick, this);;    ListingView.__super__.constructor.apply(this, arguments);
   }
   ListingView.prototype.triggerYoutubeImageClick = function(cb) {
     if (cb == null) {
       cb = function() {};
     }
-    return this.swapImageWithVideo();
+    return this.swapImageWithVideo(cb);
+  };
+  ListingView.prototype.removeVideo = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return $('iframe').remove();
   };
   ListingView.prototype.swapImageWithVideo = function(cb) {
     var iframe, img;
@@ -256,10 +263,7 @@ ListingView = (function() {
       left: 0
     });
     $(document.body).append(iframe);
-    console.log(img.length);
-    return _.wait(500, function() {
-      console.log("offset");
-      console.log(img.offset());
+    return _.wait(10, function() {
       iframe.css({
         display: "block",
         top: img.offset().top + "px",
@@ -279,12 +283,11 @@ ListingView = (function() {
     }, this));
   };
   ListingView.prototype.getBubbleContent = function() {
-    var bigImage, height, image, str, width, _ref, _ref2, _ref3;
+    var bigImage, image, str, width, _ref, _ref2;
     bigImage = (_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0;
     width = (_ref2 = this.model.youtubeParser) != null ? _ref2.width : void 0;
-    height = (_ref3 = this.model.youtubeParser) != null ? _ref3.height : void 0;
-    if (bigImage && width && height) {
-      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px; height:" + height + "px\" />";
+    if (bigImage && width) {
+      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\" />";
     } else {
       image = "";
     }
@@ -423,7 +426,7 @@ OfficeListPresenter = (function() {
       });
       this.listings.add(listing);
       listing.view.handleMarkerClick();
-      return callback();
+      return callback(null, listing);
     }, this));
   };
   OfficeListPresenter.prototype.handleListingChange = function(listing) {
@@ -459,7 +462,16 @@ OfficeListPresenter = (function() {
     }
     return listing.view.swapImageWithVideo(cb);
   };
+  OfficeListPresenter.prototype.handleMapCenterChanged = function(cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    if (this.tempListing) {
+      return this.tempListing.view.removeVideo();
+    }
+  };
   function OfficeListPresenter() {
+    this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);;
     this.handleListingYoutubeImageClick = __bind(this.handleListingYoutubeImageClick, this);;
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
@@ -488,6 +500,7 @@ OfficeListPresenter = (function() {
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
     this.map.bind("yotubeimageclick", this.handleListingYoutubeImageClick);
+    this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: (screen.availWidth - 300) + "px",

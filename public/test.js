@@ -1,4 +1,4 @@
-var cleanDb, getTestLink, listingModels, map, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete;
+var addTmpListing, cleanDb, getTestLink, listingModels, map, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -155,19 +155,47 @@ test("should be able to add youtube video", function(done) {
     img = $('.youtube img:visible');
     _.assertOk(img.attr("src"), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg");
     _.assertEqual(img.width(), 425);
-    _.assertEqual(img.height(), 349);
     return done();
   });
 });
+addTmpListing = function(cb) {
+  var listing;
+  if (cb == null) {
+    cb = function() {};
+  }
+  return listing = app.addTmpListing({
+    address: "scottsdale, az",
+    youtube: '<iframe width="425" height="349" src="http://www.youtube.com/embed/_OBlgSz8sSM" frameborder="0" allowfullscreen></iframe>'
+  }, function(err, listing) {
+    return cb(null, listing);
+  });
+};
 test("should be able to play a you tube video", function(done) {
   var listing;
   return listing = app.addTmpListing({
     address: "scottsdale, az",
     youtube: '<iframe width="425" height="349" src="http://www.youtube.com/embed/_OBlgSz8sSM" frameborder="0" allowfullscreen></iframe>'
   }, function() {
-    return app.tempListing.view.triggerYoutubeImageClick(function() {
-      _.assertOk(app.tempListing.view.getBubbleDiv().find("iframe").length === 1, "should have iframe youtube video");
-      return done();
+    return _.wait(1000, function() {
+      return app.tempListing.view.triggerYoutubeImageClick(function() {
+        _.assertEqual($('iframe').length, 1);
+        "should have iframe youtube video";
+        return done();
+      });
+    });
+  });
+});
+test("moving the map should get rid of the video and show the image instead", function(done) {
+  return addTmpListing(function(err, listing) {
+    return _.wait(500, function() {
+      return listing.view.triggerYoutubeImageClick(function() {
+        _.assertEqual($('iframe').length, 1, "wax on");
+        return _.wait(1000, function() {
+          app.map.triggerMapCenterChanged();
+          _.assertEqual($('iframe').length, 0, "wax off");
+          return done();
+        });
+      });
     });
   });
 });
