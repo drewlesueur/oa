@@ -3,19 +3,39 @@ liteAlert = (message) ->
 
 class YoutubeParser
   exampleEmbed: '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
+  createIframe: () ->
+    """<iframe width="#{@width}" height="#{@height}" src="http://www.youtube.com/embed/#{@id}?autoplay=1"></iframe>"""
   constructor: (youtubeEmbed) ->
     @embed = youtubeEmbed
-    matches = @embed.match /embed\/([^\"]*)"/
-    if not matches
-      @id = null
-      return
-    @id = matches[1]
-    widthMatches = @embed.match(/width="(\d+)"/)
-    heightMatches = @embed.match(/height="(\d+)"/)
-    if widthMatches
-      @width = widthMatches[1]
-    if heightMatches
-      @height = heightMatches[1]
+    matches = null
+    if matches = @embed.match /embed\/([^\"\?]*)(\"|\?)/
+      #"""""""
+      @id = matches[1]
+      widthMatches = @embed.match(/width="(\d+)"/)
+      heightMatches = @embed.match(/height="(\d+)"/)
+      if widthMatches
+        @width = widthMatches[1]
+      if heightMatches
+        @height = heightMatches[1]
+      @embed = @createIframe()
+
+    #example link1 http://www.youtube.com/watch?v=VnXTlclUyfg&feature=channel_video_title
+    else if matches = @embed.match /v=([^\&]*)\&/
+      @id = matches[1]
+      @link = @embed
+      @width = 425
+      @height = 349
+      @embed = @createIframe()
+    #example link2 http://www.youtube.com/user/DrewLeSueur2#p/u/3/o1N9Y_1QROs
+    else if matches = @embed.match /\/([^\/]*)$/
+      @id = matches[1]
+      @link = @embed
+      @width = 425
+      @height = 349
+      @embed = @createIframe()
+
+
+    
 
   getLittleImage: (numb) =>
     if not @id then return null
@@ -35,8 +55,8 @@ class GoogleMap extends Backbone.View
   constructor: (width, height) ->
     @el = $ @make "div"
     @el.css
-      width: screen.availWidth - 300 + "px"
-      height: window.innerHeight + "px"
+      width: $(window).width() - 300 + "px"
+      height: $(window).height() + "px"
     @latLng = new google.maps.LatLng(-34.397, 150.644)
     @options =
       zoom: 8
@@ -86,8 +106,11 @@ class GoogleMap extends Backbone.View
 
     listing.view.bubble = bubble
 
+    #TODO maybe these bindings should go into the view
     google.maps.event.addListener marker, 'click', () ->
       listing.view.handleMarkerClick()
+    google.maps.event.addListener bubble, 'closeclick', () ->
+      listing.view.handleBubbleClose()
 
       
      
@@ -140,6 +163,7 @@ class ListingView extends Backbone.View
     @swapImageWithVideo cb
 
   removeVideo: (cb=->) =>
+    #TODO maybe a class or id on the iframe.. or wrap it
     $('iframe').remove()
   swapImageWithVideo: (cb=->) =>
     iframe = $ @model.youtubeParser.embed
@@ -160,6 +184,8 @@ class ListingView extends Backbone.View
       cb()
 
 
+  updateNotes: () =>
+    @content.find(".notes").html @model.get("notes")
     
   getBubbleDiv: () =>
     $("[data-cid=\"#{@model.cid}\"]")
@@ -175,8 +201,10 @@ class ListingView extends Backbone.View
   getBubbleContent: () =>
     bigImage = @model.youtubeParser?.getBigImage()
     width = @model.youtubeParser?.width
+    height = @model.youtubeParser?.height
+
     if bigImage and width
-      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px;\" />"
+      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px;\;height:#{height}px\" />"
     else
       image = ""
     str = """
@@ -195,9 +223,12 @@ class ListingView extends Backbone.View
     content = $(str)
     content.find("img.thumbnail").click () =>
       @triggerYoutubeImageClick()
-    
-    content[0]
-  handleMarkerClick: () ->
+     
+    @content = content
+    @content[0]
+  handleBubbleClose: () =>
+    @removeVideo()
+  handleMarkerClick: () =>
     if @bubbleState == "open"
       @bubble.close()
       @bubbleState = "closed"
@@ -267,7 +298,9 @@ class OfficeListPresenter
       listing.view = new ListingView model: listing
     listing.bind "remove", (model, collection) =>
       @map.removeListing model
-    listing.bind "change:notes", () => @handleListingChange listing
+    listing.bind "change:notes", () => 
+      console.log "notes changed"
+      @handleNotesChange listing
     listing.bind "change:youtube", () => @handleListingChange listing
 
     @map.lookup listing.get('address'), (err, results) =>
@@ -285,6 +318,8 @@ class OfficeListPresenter
       @listings.add listing
       listing.view.handleMarkerClick()
       callback null, listing
+  handleNotesChange: (listing) =>
+    listing.view.updateNotes()
   handleListingChange: (listing) =>
     listing.view.renderBubble()
   handleAppNotesChange: (notes, cb=->) =>
@@ -322,8 +357,8 @@ class OfficeListPresenter
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css
-      width: (screen.availWidth - 300) + "px"
-      height: document.body.clientHeight + "px"
+      width: $(window).width() - 300 + "px"
+      height: $(window).height() + "px"
 
     
     onLoc = (position) =>

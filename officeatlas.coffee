@@ -6,9 +6,10 @@ MySqlHelper = require("mysql-helper").MySqlHelper
 
 # reconnect 1 second after the connection closes
 
+tries = 0
 Client.prototype.makeLastingConnection = () ->
-  console.log "trying to make a lasting connection"
-  console.log @constructor.toString()
+  tries++
+  console.log "trying to make a lasting connection for the #{tries} time"
   @connect () =>
     @_connection.on "close", () =>
       _.wait 1000, () => @makeLastingConnection()
@@ -70,7 +71,6 @@ app.post "/cleanUpTestDb", (req, res) ->
     res.send "success"
 
 app.post "/listings", (req, res) ->
-  console.log req
   db.insert "listings", req.body, (err) ->
     if err then return res.send err.message
     res.send {'yay': 1}
@@ -83,7 +83,6 @@ app.get "/listings", (req, res) ->
 
 
 
-console.log "test"
 exports.app = app
 
 if (!module.parent) 

@@ -1,4 +1,4 @@
-var addTmpListing, cleanDb, getTestLink, listingModels, map, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete;
+var addTmpListing, cleanDb, getTestLink, listingModels, map, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete, waitForYoutube;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -142,6 +142,39 @@ test("typing in notes should update the bubble", function(done) {
     return done();
   });
 });
+test("Youtube parser", function(done) {
+  var t, y;
+  return done();
+  y = new YoutubeParser('<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
+  _.assertEqual(y.id, "H1G2YnKanWs");
+  _.assertEqual(y.getBigImage(), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg");
+  _.assertEqual(y.getLittleImage(1), "http://img.youtube.com/vi/H1G2YnKanWs/1.jpg");
+  _.assertEqual(y.getLittleImage(2), "http://img.youtube.com/vi/H1G2YnKanWs/2.jpg");
+  _.assertEqual(y.getLittleImage(3), "http://img.youtube.com/vi/H1G2YnKanWs/3.jpg");
+  _.assertEqual(y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
+  _.assertEqual(y.width, 425);
+  _.assertEqual(y.height, 349);
+  y = new YoutubeParser('http://www.youtube.com/watch?v=VnXTlclUyfg&feature=channel_video_title');
+  _.assertEqual(y.id, "VnXTlclUyfg", "youtube link");
+  _.assertEqual(y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/VnXTlclUyfg"></iframe>');
+  _.assertEqual(y.link, "http://www.youtube.com/watch?v=VnXTlclUyfg&feature=channel_video_title");
+  y = new YoutubeParser('http://www.youtube.com/user/DrewLeSueur2#p/u/3/o1N9Y_1QROs');
+  _.assertEqual(y.id, "o1N9Y_1QROs");
+  _.assertEqual(y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/o1N9Y_1QROs"></iframe>');
+  _.assertEqual(y.link, 'http://www.youtube.com/user/DrewLeSueur2#p/u/3/o1N9Y_1QROs');
+  y = new YoutubeParser('<iframe width="560" height="349" src="http://www.youtube.com/embed/TzRvt8ehYD0?rel=0" frameborder="0" allowfullscreen></iframe>');
+  _.assertEqual(y.id, "TzRvt8ehYD0");
+  t = new YoutubeParser('');
+  _.assertEqual(t.id, null);
+  _.assertEqual(t.getBigImage(), null);
+  _.assertEqual(t.getLittleImage(1), null);
+  _.assertEqual(t.getLittleImage(2), null);
+  _.assertEqual(t.getLittleImage(3), null);
+  return done();
+});
+test("add listing using app.addListing", function(done) {
+  return done();
+});
 test("should be able to add youtube video", function(done) {
   var listing;
   return listing = app.addTmpListing({
@@ -170,13 +203,14 @@ addTmpListing = function(cb) {
     return cb(null, listing);
   });
 };
+waitForYoutube = 3000;
 test("should be able to play a you tube video", function(done) {
   var listing;
   return listing = app.addTmpListing({
     address: "scottsdale, az",
     youtube: '<iframe width="425" height="349" src="http://www.youtube.com/embed/_OBlgSz8sSM" frameborder="0" allowfullscreen></iframe>'
   }, function() {
-    return _.wait(1000, function() {
+    return _.wait(waitForYoutube, function() {
       return app.tempListing.view.triggerYoutubeImageClick(function() {
         _.assertEqual($('iframe').length, 1);
         "should have iframe youtube video";
@@ -187,7 +221,7 @@ test("should be able to play a you tube video", function(done) {
 });
 test("moving the map should get rid of the video and show the image instead", function(done) {
   return addTmpListing(function(err, listing) {
-    return _.wait(500, function() {
+    return _.wait(waitForYoutube, function() {
       return listing.view.triggerYoutubeImageClick(function() {
         _.assertEqual($('iframe').length, 1, "wax on");
         return _.wait(1000, function() {
@@ -199,26 +233,20 @@ test("moving the map should get rid of the video and show the image instead", fu
     });
   });
 });
-test("Youtube parser", function(done) {
-  var t, y;
-  y = new YoutubeParser('<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
-  _.assertEqual(y.id, "H1G2YnKanWs");
-  _.assertEqual(y.getBigImage(), "http://img.youtube.com/vi/H1G2YnKanWs/0.jpg");
-  _.assertEqual(y.getLittleImage(1), "http://img.youtube.com/vi/H1G2YnKanWs/1.jpg");
-  _.assertEqual(y.getLittleImage(2), "http://img.youtube.com/vi/H1G2YnKanWs/2.jpg");
-  _.assertEqual(y.getLittleImage(3), "http://img.youtube.com/vi/H1G2YnKanWs/3.jpg");
-  _.assertEqual(y.embed, '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>');
-  _.assertEqual(y.width, 425);
-  _.assertEqual(y.height, 349);
-  t = new YoutubeParser('');
-  _.assertEqual(t.id, null);
-  _.assertEqual(t.getBigImage(), null);
-  _.assertEqual(t.getLittleImage(1), null);
-  _.assertEqual(t.getLittleImage(2), null);
-  _.assertEqual(t.getLittleImage(3), null);
-  return done();
+test("Closing the bubble should remove the youtube video", function(done) {
+  return addTmpListing(function(err, listing) {
+    return _.wait(waitForYoutube, function() {
+      return listing.view.triggerYoutubeImageClick(function() {
+        return _.wait(1000, function() {
+          listing.view.handleBubbleClose();
+          _.assertEqual($('iframe').length, 0, "wax off");
+          return done();
+        });
+      });
+    });
+  });
 });
-test("add listing using app.addListing", function(done) {
+test("there should be a big play button", function(done) {
   return done();
 });
 listingModels = null;

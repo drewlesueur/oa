@@ -12,23 +12,37 @@ liteAlert = function(message) {
 };
 YoutubeParser = (function() {
   YoutubeParser.prototype.exampleEmbed = '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>';
+  YoutubeParser.prototype.createIframe = function() {
+    return "<iframe width=\"" + this.width + "\" height=\"" + this.height + "\" src=\"http://www.youtube.com/embed/" + this.id + "?autoplay=1\"></iframe>";
+  };
   function YoutubeParser(youtubeEmbed) {
     this.getBigImage = __bind(this.getBigImage, this);;
     this.getLittleImage = __bind(this.getLittleImage, this);;    var heightMatches, matches, widthMatches;
     this.embed = youtubeEmbed;
-    matches = this.embed.match(/embed\/([^\"]*)"/);
-    if (!matches) {
-      this.id = null;
-      return;
-    }
-    this.id = matches[1];
-    widthMatches = this.embed.match(/width="(\d+)"/);
-    heightMatches = this.embed.match(/height="(\d+)"/);
-    if (widthMatches) {
-      this.width = widthMatches[1];
-    }
-    if (heightMatches) {
-      this.height = heightMatches[1];
+    matches = null;
+    if (matches = this.embed.match(/embed\/([^\"\?]*)(\"|\?)/)) {
+      this.id = matches[1];
+      widthMatches = this.embed.match(/width="(\d+)"/);
+      heightMatches = this.embed.match(/height="(\d+)"/);
+      if (widthMatches) {
+        this.width = widthMatches[1];
+      }
+      if (heightMatches) {
+        this.height = heightMatches[1];
+      }
+      this.embed = this.createIframe();
+    } else if (matches = this.embed.match(/v=([^\&]*)\&/)) {
+      this.id = matches[1];
+      this.link = this.embed;
+      this.width = 425;
+      this.height = 349;
+      this.embed = this.createIframe();
+    } else if (matches = this.embed.match(/\/([^\/]*)$/)) {
+      this.id = matches[1];
+      this.link = this.embed;
+      this.width = 425;
+      this.height = 349;
+      this.embed = this.createIframe();
     }
   }
   YoutubeParser.prototype.getLittleImage = function(numb) {
@@ -71,8 +85,8 @@ GoogleMap = (function() {
     this.triggerReload = __bind(this.triggerReload, this);;
     this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);;    this.el = $(this.make("div"));
     this.el.css({
-      width: screen.availWidth - 300 + "px",
-      height: window.innerHeight + "px"
+      width: $(window).width() - 300 + "px",
+      height: $(window).height() + "px"
     });
     this.latLng = new google.maps.LatLng(-34.397, 150.644);
     this.options = {
@@ -148,8 +162,11 @@ GoogleMap = (function() {
       zIndex: 999999
     });
     listing.view.bubble = bubble;
-    return google.maps.event.addListener(marker, 'click', function() {
+    google.maps.event.addListener(marker, 'click', function() {
       return listing.view.handleMarkerClick();
+    });
+    return google.maps.event.addListener(bubble, 'closeclick', function() {
+      return listing.view.handleBubbleClose();
     });
   };
   GoogleMap.prototype.updateCurrentBubbleNotes = function(notes, cb) {
@@ -230,9 +247,12 @@ Listing = (function() {
 ListingView = (function() {
   __extends(ListingView, Backbone.View);
   function ListingView() {
+    this.handleMarkerClick = __bind(this.handleMarkerClick, this);;
+    this.handleBubbleClose = __bind(this.handleBubbleClose, this);;
     this.getBubbleContent = __bind(this.getBubbleContent, this);;
     this.renderBubble = __bind(this.renderBubble, this);;
     this.getBubbleDiv = __bind(this.getBubbleDiv, this);;
+    this.updateNotes = __bind(this.updateNotes, this);;
     this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);;
     this.removeVideo = __bind(this.removeVideo, this);;
     this.triggerYoutubeImageClick = __bind(this.triggerYoutubeImageClick, this);;    ListingView.__super__.constructor.apply(this, arguments);
@@ -272,6 +292,9 @@ ListingView = (function() {
       return cb();
     });
   };
+  ListingView.prototype.updateNotes = function() {
+    return this.content.find(".notes").html(this.model.get("notes"));
+  };
   ListingView.prototype.getBubbleDiv = function() {
     return $("[data-cid=\"" + this.model.cid + "\"]");
   };
@@ -279,11 +302,12 @@ ListingView = (function() {
     return this.bubble.setContent(this.getBubbleContent());
   };
   ListingView.prototype.getBubbleContent = function() {
-    var bigImage, content, image, str, width, _ref, _ref2;
+    var bigImage, content, height, image, str, width, _ref, _ref2, _ref3;
     bigImage = (_ref = this.model.youtubeParser) != null ? _ref.getBigImage() : void 0;
     width = (_ref2 = this.model.youtubeParser) != null ? _ref2.width : void 0;
+    height = (_ref3 = this.model.youtubeParser) != null ? _ref3.height : void 0;
     if (bigImage && width) {
-      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\" />";
+      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\;height:" + height + "px\" />";
     } else {
       image = "";
     }
@@ -292,7 +316,11 @@ ListingView = (function() {
     content.find("img.thumbnail").click(__bind(function() {
       return this.triggerYoutubeImageClick();
     }, this));
-    return content[0];
+    this.content = content;
+    return this.content[0];
+  };
+  ListingView.prototype.handleBubbleClose = function() {
+    return this.removeVideo();
   };
   ListingView.prototype.handleMarkerClick = function() {
     if (this.bubbleState === "open") {
@@ -404,7 +432,8 @@ OfficeListPresenter = (function() {
       return this.map.removeListing(model);
     }, this));
     listing.bind("change:notes", __bind(function() {
-      return this.handleListingChange(listing);
+      console.log("notes changed");
+      return this.handleNotesChange(listing);
     }, this));
     listing.bind("change:youtube", __bind(function() {
       return this.handleListingChange(listing);
@@ -428,6 +457,9 @@ OfficeListPresenter = (function() {
       listing.view.handleMarkerClick();
       return callback(null, listing);
     }, this));
+  };
+  OfficeListPresenter.prototype.handleNotesChange = function(listing) {
+    return listing.view.updateNotes();
   };
   OfficeListPresenter.prototype.handleListingChange = function(listing) {
     return listing.view.renderBubble();
@@ -469,6 +501,7 @@ OfficeListPresenter = (function() {
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
     this.handleListingChange = __bind(this.handleListingChange, this);;
+    this.handleNotesChange = __bind(this.handleNotesChange, this);;
     this.addTmpListing = __bind(this.addTmpListing, this);;
     this.addListing = __bind(this.addListing, this);;
     this.handleSubmit = __bind(this.handleSubmit, this);;
@@ -495,8 +528,8 @@ OfficeListPresenter = (function() {
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
-      width: (screen.availWidth - 300) + "px",
-      height: document.body.clientHeight + "px"
+      width: $(window).width() - 300 + "px",
+      height: $(window).height() + "px"
     });
     onLoc = __bind(function(position) {
       var lat, latLng, lng;
