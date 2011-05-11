@@ -51,6 +51,9 @@ _.each ['s'], (method) ->
   Backbone.Collection.prototype[method] = () ->
     return _[method].apply _, [this.models].concat _.toArray arguments
 
+
+
+    
 class GoogleMap extends Backbone.View
   constructor: (width, height) ->
     @el = $ @make "div"
@@ -256,6 +259,52 @@ class OfficeListController extends Backbone.Controller
     runTests() 
 
     
+class SignInView extends Backbone.View
+  questions: [
+    "What is your fav color?"
+    "What is your dogs maiden name?"
+    "How many pet hampsters do you have?"
+  ]
+  signUpText: "Just type in an email and choose a question and answer"
+  signInText: "Type in your email and choose your question and answer"
+  
+  constructor: () ->
+    super
+    $("#sign-in").click (e) =>
+      e.preventDefault()
+      @triggerSignInClick 
+  triggerSignInClick: (done=->) =>
+    if not @SignInDiv
+      @SignInDiv ||= @getSignInDiv()
+      $("#login-area").append @SignInDiv
+      done()
+    else if @SignInDiv.is ":visible"
+      @SignInDiv.hide done
+    else
+      @SignInDiv.show done
+
+      
+  getSignInDiv: () =>
+    questions = for question in @questions
+      val = question.replace /[^\w]/g, "_"
+      "<option value=\"#{val}\">#{question}</option>"
+    $ """
+      <div class="login">
+        <div class="notes">#{@signInText}</div> 
+        <form>
+          <input type="text" id="email" placeholder="email">
+          <br />
+          <select id="question">
+            #{questions}
+          </select>
+          <br/>
+          <input type="text" id="password" placeholder="ansswer"/>
+          <br />
+          <input type="submit" value="Sign In"/>
+        </form>
+      </div>
+
+    """
 
 class OfficeListPresenter
   handleRefreshedListings: () =>
@@ -371,6 +420,7 @@ class OfficeListPresenter
       @map.map.setCenter(latLng)
   
     navigator.geolocation?.getCurrentPosition?(onLoc)
+    @signInView = new SignInView()
 
     
 

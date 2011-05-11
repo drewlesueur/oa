@@ -16,6 +16,29 @@ _.assertNoSee = (text, message) ->
   else
     _.assertPass text, "[html body]", message, "see", _.assertSee 
 
+
+# This could be bad, experimenting with extending native javascript objects
+# / Monkeypatching javascript
+
+monkeyPatch = (obj, name, func) ->
+  obj[name] = (args...) ->
+    return func.apply this, [this].concat args
+  
+toMonkeyPatch =
+  "shouldBe" : _.assertEqual
+  "shouldNotBe" : _.assertNotEqual
+  "wait" : _.wait
+
+
+for name, func of toMonkeyPatch
+  #monkeyPatch Object, name, func
+  monkeyPatch Number.prototype, name, func
+  monkeyPatch String.prototype, name, func
+
+#polluting window
+for name, func of _
+  window[name] = func
+
 tests = {}
 
 test = (title, func) ->
@@ -238,7 +261,39 @@ test "Closing the bubble should remove the youtube video", (done) ->
           done()
 
 test "there should be a big play button", (done) ->
+  #TODO make a big play button
   done()
+
+test "There should be a login", (done) ->
+  $("#sign-in").length.shouldBe 1, "should be login"
+  $("#sign-up").length.shouldBe 1, "see ceate account"
+  done()
+
+test "Sign in should pop up the question answer thing", (done) ->
+   _.series [
+    app.signInView.triggerSignInClick
+    (done) ->
+      $("#email").length.shouldBe 1, "see email field"
+      $("#question:visible").length.shouldBe 1, "see password question"
+      $("#password:visible").length.shouldBe 1, "see password"
+      
+      
+      _.assertOk not($("#sign-in").is(":visible")), "shouldnt see sign in"
+      done()
+   ], (err, results) ->
+     done()
+
+     
+test "new wait syntax", (done) ->
+  1000.wait () -> 
+    console.log "waited"
+    "test".shouldBe "test"
+  wait 1000, () ->
+    console.log "also waited"
+    assertOk true, "ok should be ok"
+  wait 1100, () -> 
+    done()
+    
 
 listingModels = null
 map = null

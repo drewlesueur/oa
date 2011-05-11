@@ -1,4 +1,4 @@
-var addTmpListing, cleanDb, getTestLink, listingModels, map, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete, waitForYoutube;
+var addTmpListing, cleanDb, func, getTestLink, listingModels, map, monkeyPatch, name, preRun, runTest, runTests, savingAListing, server, test, tests, testsComplete, toMonkeyPatch, waitForYoutube;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -21,6 +21,27 @@ _.assertNoSee = function(text, message) {
     return _.assertPass(text, "[html body]", message, "see", _.assertSee);
   }
 };
+monkeyPatch = function(obj, name, func) {
+  return obj[name] = function() {
+    var args;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    return func.apply(this, [this].concat(args));
+  };
+};
+toMonkeyPatch = {
+  "shouldBe": _.assertEqual,
+  "shouldNotBe": _.assertNotEqual,
+  "wait": _.wait
+};
+for (name in toMonkeyPatch) {
+  func = toMonkeyPatch[name];
+  monkeyPatch(Number.prototype, name, func);
+  monkeyPatch(String.prototype, name, func);
+}
+for (name in _) {
+  func = _[name];
+  window[name] = func;
+}
 tests = {};
 test = function(title, func) {
   return tests[title] = func;
@@ -248,6 +269,37 @@ test("Closing the bubble should remove the youtube video", function(done) {
 });
 test("there should be a big play button", function(done) {
   return done();
+});
+test("There should be a login", function(done) {
+  $("#sign-in").length.shouldBe(1, "should be login");
+  $("#sign-up").length.shouldBe(1, "see ceate account");
+  return done();
+});
+test("Sign in should pop up the question answer thing", function(done) {
+  return _.series([
+    app.signInView.triggerSignInClick, function(done) {
+      $("#email").length.shouldBe(1, "see email field");
+      $("#question:visible").length.shouldBe(1, "see password question");
+      $("#password:visible").length.shouldBe(1, "see password");
+      _.assertOk(!($("#sign-in").is(":visible")), "shouldnt see sign in");
+      return done();
+    }
+  ], function(err, results) {
+    return done();
+  });
+});
+test("new wait syntax", function(done) {
+  (1000).wait(function() {
+    console.log("waited");
+    return "test".shouldBe("test");
+  });
+  wait(1000, function() {
+    console.log("also waited");
+    return assertOk(true, "ok should be ok");
+  });
+  return wait(1100, function() {
+    return done();
+  });
 });
 listingModels = null;
 map = null;

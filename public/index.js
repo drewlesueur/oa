@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, liteAlert;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, SignInView, YoutubeParser, liteAlert;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -16,8 +16,8 @@ YoutubeParser = (function() {
     return "<iframe width=\"" + this.width + "\" height=\"" + this.height + "\" src=\"http://www.youtube.com/embed/" + this.id + "?autoplay=1\"></iframe>";
   };
   function YoutubeParser(youtubeEmbed) {
-    this.getBigImage = __bind(this.getBigImage, this);;
-    this.getLittleImage = __bind(this.getLittleImage, this);;    var heightMatches, matches, widthMatches;
+    this.getBigImage = __bind(this.getBigImage, this);
+    this.getLittleImage = __bind(this.getLittleImage, this);    var heightMatches, matches, widthMatches;
     this.embed = youtubeEmbed;
     matches = null;
     if (matches = this.embed.match(/embed\/([^\"\?]*)(\"|\?)/)) {
@@ -70,20 +70,20 @@ _.each(['s'], function(method) {
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
-    this.lookup = __bind(this.lookup, this);;
-    this.hideReloading = __bind(this.hideReloading, this);;
-    this.displayReloading = __bind(this.displayReloading, this);;
-    this.removeListing = __bind(this.removeListing, this);;
-    this.removeListings = __bind(this.removeListings, this);;
-    this.addListings = __bind(this.addListings, this);;
-    this.updateCurrentBubbleNotes = __bind(this.updateCurrentBubbleNotes, this);;
-    this.addListing = __bind(this.addListing, this);;
-    this.triggerNotesChange = __bind(this.triggerNotesChange, this);;
-    this.clearFields = __bind(this.clearFields, this);;
-    this.triggerAddressChange = __bind(this.triggerAddressChange, this);;
-    this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);;
-    this.triggerReload = __bind(this.triggerReload, this);;
-    this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);;    this.el = $(this.make("div"));
+    this.lookup = __bind(this.lookup, this);
+    this.hideReloading = __bind(this.hideReloading, this);
+    this.displayReloading = __bind(this.displayReloading, this);
+    this.removeListing = __bind(this.removeListing, this);
+    this.removeListings = __bind(this.removeListings, this);
+    this.addListings = __bind(this.addListings, this);
+    this.updateCurrentBubbleNotes = __bind(this.updateCurrentBubbleNotes, this);
+    this.addListing = __bind(this.addListing, this);
+    this.triggerNotesChange = __bind(this.triggerNotesChange, this);
+    this.clearFields = __bind(this.clearFields, this);
+    this.triggerAddressChange = __bind(this.triggerAddressChange, this);
+    this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);
+    this.triggerReload = __bind(this.triggerReload, this);
+    this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);    this.el = $(this.make("div"));
     this.el.css({
       width: $(window).width() - 300 + "px",
       height: $(window).height() + "px"
@@ -227,8 +227,8 @@ GoogleMap = (function() {
 Listing = (function() {
   __extends(Listing, Backbone.Model);
   function Listing() {
-    this.setYoutube = __bind(this.setYoutube, this);;
-    this.set = __bind(this.set, this);;    Listing.__super__.constructor.apply(this, arguments);
+    this.setYoutube = __bind(this.setYoutube, this);
+    this.set = __bind(this.set, this);    Listing.__super__.constructor.apply(this, arguments);
   }
   Listing.prototype.set = function() {
     var args, attrs;
@@ -247,15 +247,15 @@ Listing = (function() {
 ListingView = (function() {
   __extends(ListingView, Backbone.View);
   function ListingView() {
-    this.handleMarkerClick = __bind(this.handleMarkerClick, this);;
-    this.handleBubbleClose = __bind(this.handleBubbleClose, this);;
-    this.getBubbleContent = __bind(this.getBubbleContent, this);;
-    this.renderBubble = __bind(this.renderBubble, this);;
-    this.getBubbleDiv = __bind(this.getBubbleDiv, this);;
-    this.updateNotes = __bind(this.updateNotes, this);;
-    this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);;
-    this.removeVideo = __bind(this.removeVideo, this);;
-    this.triggerYoutubeImageClick = __bind(this.triggerYoutubeImageClick, this);;    ListingView.__super__.constructor.apply(this, arguments);
+    this.handleMarkerClick = __bind(this.handleMarkerClick, this);
+    this.handleBubbleClose = __bind(this.handleBubbleClose, this);
+    this.getBubbleContent = __bind(this.getBubbleContent, this);
+    this.renderBubble = __bind(this.renderBubble, this);
+    this.getBubbleDiv = __bind(this.getBubbleDiv, this);
+    this.updateNotes = __bind(this.updateNotes, this);
+    this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);
+    this.removeVideo = __bind(this.removeVideo, this);
+    this.triggerYoutubeImageClick = __bind(this.triggerYoutubeImageClick, this);    ListingView.__super__.constructor.apply(this, arguments);
   }
   ListingView.prototype.triggerYoutubeImageClick = function(cb) {
     if (cb == null) {
@@ -345,8 +345,8 @@ Listings = (function() {
 OfficeListController = (function() {
   __extends(OfficeListController, Backbone.Controller);
   function OfficeListController() {
-    this.test = __bind(this.test, this);;
-    this.tests = __bind(this.tests, this);;    OfficeListController.__super__.constructor.apply(this, arguments);
+    this.test = __bind(this.test, this);
+    this.tests = __bind(this.tests, this);    OfficeListController.__super__.constructor.apply(this, arguments);
   }
   OfficeListController.prototype.routes = {
     "test": "test",
@@ -359,6 +359,50 @@ OfficeListController = (function() {
     return runTests();
   };
   return OfficeListController;
+})();
+SignInView = (function() {
+  __extends(SignInView, Backbone.View);
+  SignInView.prototype.questions = ["What is your fav color?", "What is your dogs maiden name?", "How many pet hampsters do you have?"];
+  SignInView.prototype.signUpText = "Just type in an email and choose a question and answer";
+  SignInView.prototype.signInText = "Type in your email and choose your question and answer";
+  function SignInView() {
+    this.getSignInDiv = __bind(this.getSignInDiv, this);
+    this.triggerSignInClick = __bind(this.triggerSignInClick, this);    SignInView.__super__.constructor.apply(this, arguments);
+    $("#sign-in").click(__bind(function(e) {
+      e.preventDefault();
+      return this.triggerSignInClick;
+    }, this));
+  }
+  SignInView.prototype.triggerSignInClick = function(done) {
+    if (done == null) {
+      done = function() {};
+    }
+    if (!this.SignInDiv) {
+      this.SignInDiv || (this.SignInDiv = this.getSignInDiv());
+      $("#login-area").append(this.SignInDiv);
+      return done();
+    } else if (this.SignInDiv.is(":visible")) {
+      return this.SignInDiv.hide(done);
+    } else {
+      return this.SignInDiv.show(done);
+    }
+  };
+  SignInView.prototype.getSignInDiv = function() {
+    var question, questions, val;
+    questions = (function() {
+      var _i, _len, _ref, _results;
+      _ref = this.questions;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        question = _ref[_i];
+        val = question.replace(/[^\w]/g, "_");
+        _results.push("<option value=\"" + val + "\">" + question + "</option>");
+      }
+      return _results;
+    }).call(this);
+    return $("<div class=\"login\">\n  <div class=\"notes\">" + this.signInText + "</div> \n  <form>\n    <input type=\"text\" id=\"email\" placeholder=\"email\">\n    <br />\n    <select id=\"question\">\n      " + questions + "\n    </select>\n    <br/>\n    <input type=\"text\" id=\"password\" placeholder=\"ansswer\"/>\n    <br />\n    <input type=\"submit\" value=\"Sign In\"/>\n  </form>\n</div>\n");
+  };
+  return SignInView;
 })();
 OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleRefreshedListings = function() {
@@ -497,18 +541,18 @@ OfficeListPresenter = (function() {
     }
   };
   function OfficeListPresenter() {
-    this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);;
-    this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);;
-    this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);;
-    this.handleListingChange = __bind(this.handleListingChange, this);;
-    this.handleNotesChange = __bind(this.handleNotesChange, this);;
-    this.addTmpListing = __bind(this.addTmpListing, this);;
-    this.addListing = __bind(this.addListing, this);;
-    this.handleSubmit = __bind(this.handleSubmit, this);;
-    this.handleReload = __bind(this.handleReload, this);;
-    this.handleAddedListing = __bind(this.handleAddedListing, this);;
-    this.handleRefreshedListing = __bind(this.handleRefreshedListing, this);;
-    this.handleRefreshedListings = __bind(this.handleRefreshedListings, this);;    var onLoc, _ref;
+    this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
+    this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
+    this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);
+    this.handleListingChange = __bind(this.handleListingChange, this);
+    this.handleNotesChange = __bind(this.handleNotesChange, this);
+    this.addTmpListing = __bind(this.addTmpListing, this);
+    this.addListing = __bind(this.addListing, this);
+    this.handleSubmit = __bind(this.handleSubmit, this);
+    this.handleReload = __bind(this.handleReload, this);
+    this.handleAddedListing = __bind(this.handleAddedListing, this);
+    this.handleRefreshedListing = __bind(this.handleRefreshedListing, this);
+    this.handleRefreshedListings = __bind(this.handleRefreshedListings, this);    var onLoc, _ref;
     _.extend(this, Backbone.Events);
     $('#listing-form').submit(__bind(function(e) {
       e.preventDefault();
@@ -541,10 +585,11 @@ OfficeListPresenter = (function() {
       return this.map.map.setCenter(latLng);
     }, this);
     if ((_ref = navigator.geolocation) != null) {
-      if (typeof _ref.getCurrentPosition == "function") {
+      if (typeof _ref.getCurrentPosition === "function") {
         _ref.getCurrentPosition(onLoc);
       }
     }
+    this.signInView = new SignInView();
   }
   return OfficeListPresenter;
 })();
