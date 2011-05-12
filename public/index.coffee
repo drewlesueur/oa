@@ -60,9 +60,9 @@ class GoogleMap extends Backbone.View
     @el.css
       width: $(window).width() - 300 + "px"
       height: $(window).height() + "px"
-    @latLng = new google.maps.LatLng(-34.397, 150.644)
+    @latLng = new google.maps.LatLng(33.4222685,-111.8226402)
     @options =
-      zoom: 8
+      zoom:11 
       center: @latLng
       mapTypeId: google.maps.MapTypeId.ROADMAP
     @map = new google.maps.Map @el[0], @options 

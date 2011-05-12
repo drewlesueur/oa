@@ -53,6 +53,8 @@ do () ->
     wait: wait
     assertOk: ok
   } = _
+  
+  
   tests = {}
 
   test = (title, func) ->

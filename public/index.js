@@ -88,9 +88,9 @@ GoogleMap = (function() {
       width: $(window).width() - 300 + "px",
       height: $(window).height() + "px"
     });
-    this.latLng = new google.maps.LatLng(-34.397, 150.644);
+    this.latLng = new google.maps.LatLng(33.4222685, -111.8226402);
     this.options = {
-      zoom: 8,
+      zoom: 11,
       center: this.latLng,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
