@@ -42,13 +42,14 @@ for name, func of toMonkeyPatch
 runTest = null
 runTests = null
 do () ->
+  # some coffeescript destructuring assignments
   {
     assertSee: see
     assertEqual: e
     assertNotEqual: ne
     assertEqual: eq #again
     assertNoSee: noSee
-    serial: serial
+    series: series
     parallel: parallel
     wait: wait
     assertOk: ok
@@ -291,13 +292,19 @@ do () ->
         $("#email").length.shouldBe 1, "see email field"
         $("#question:visible").length.shouldBe 1, "see password question"
         $("#password:visible").length.shouldBe 1, "see password"
+        eq $("#cancel-signin:visible").length, 1, "see cancel sign in"
         
-        _.assertOk not($("#sign-in").is(":visible")), "shouldnt see sign in"
         done()
      ], (err, results) ->
        done()
-
        
+  test "cancel sign in ", (done) ->
+    series [
+      app.signInView.triggerSignInClick
+      app.signInView.triggerCancelClick 
+    ], (err, results) ->
+      eq app.signInView.visible, false, "shouln't see the popup"
+      done() 
   test "new wait syntax", (done) ->
     1000.wait () -> 
       console.log "waited"

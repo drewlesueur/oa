@@ -367,12 +367,39 @@ SignInView = (function() {
   SignInView.prototype.signInText = "Type in your email and choose your question and answer";
   function SignInView() {
     this.getSignInDiv = __bind(this.getSignInDiv, this);
-    this.triggerSignInClick = __bind(this.triggerSignInClick, this);    SignInView.__super__.constructor.apply(this, arguments);
+    this.triggerSignInClick = __bind(this.triggerSignInClick, this);
+    this.showPupUp = __bind(this.showPupUp, this);
+    this.hidePopUp = __bind(this.hidePopUp, this);
+    this.triggerCancelClick = __bind(this.triggerCancelClick, this);    SignInView.__super__.constructor.apply(this, arguments);
+    this.visible = false;
     $("#sign-in").click(__bind(function(e) {
-      e.preventDefault();
-      return this.triggerSignInClick;
+      return this.triggerSignInClick();
     }, this));
   }
+  SignInView.prototype.triggerCancelClick = function(done) {
+    if (done == null) {
+      done = function() {};
+    }
+    return this.hidePopUp(done);
+  };
+  SignInView.prototype.hidePopUp = function(done) {
+    if (done == null) {
+      done = function() {};
+    }
+    return this.SignInDiv.hide(__bind(function() {
+      this.visible = false;
+      return done();
+    }, this));
+  };
+  SignInView.prototype.showPupUp = function(d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return this.SignInDiv.show(__bind(function() {
+      this.visible = true;
+      return d();
+    }, this));
+  };
   SignInView.prototype.triggerSignInClick = function(done) {
     if (done == null) {
       done = function() {};
@@ -380,11 +407,15 @@ SignInView = (function() {
     if (!this.SignInDiv) {
       this.SignInDiv || (this.SignInDiv = this.getSignInDiv());
       $("#login-area").append(this.SignInDiv);
-      return done();
-    } else if (this.SignInDiv.is(":visible")) {
-      return this.SignInDiv.hide(done);
+      this.SignInDiv.find('#cancel-sign-in').click(__bind(function(e) {
+        e.preventDefault();
+        return this.triggerCancelClick();
+      }, this));
+    }
+    if (this.SignInDiv.is(":visible")) {
+      return this.hidePopUp(done);
     } else {
-      return this.SignInDiv.show(done);
+      return this.showPupUp(done);
     }
   };
   SignInView.prototype.getSignInDiv = function() {
@@ -400,7 +431,7 @@ SignInView = (function() {
       }
       return _results;
     }).call(this);
-    return $("<div class=\"login\">\n  <div class=\"notes\">" + this.signInText + "</div> \n  <form>\n    <input type=\"text\" id=\"email\" placeholder=\"email\">\n    <br />\n    <select id=\"question\">\n      " + questions + "\n    </select>\n    <br/>\n    <input type=\"text\" id=\"password\" placeholder=\"ansswer\"/>\n    <br />\n    <input type=\"submit\" value=\"Sign In\"/>\n  </form>\n</div>\n");
+    return $("<div class=\"login\" style=\"display:none;\" id=\"login-pop-up\">\n  <div class=\"notes\">" + this.signInText + "</div> \n  <form>\n    <input type=\"text\" id=\"email\" placeholder=\"email\">\n    <br />\n    <select id=\"question\">\n      " + questions + "\n    </select>\n    <br/>\n    <input type=\"text\" id=\"password\" placeholder=\"ansswer\"/>\n    <br />\n    <input type=\"submit\" value=\"Sign In\"/>\n    <a href=\"#\" id=\"cancel-sign-in\">Cancel</a>\n  </form>\n</div>\n");
   };
   return SignInView;
 })();

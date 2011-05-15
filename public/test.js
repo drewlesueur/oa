@@ -41,8 +41,8 @@ for (name in toMonkeyPatch) {
 runTest = null;
 runTests = null;
 (function() {
-  var addTmpListing, cleanDb, e, eq, getTestLink, listingModels, map, ne, noSee, ok, parallel, preRun, savingAListing, see, serial, server, test, tests, testsComplete, wait, waitForYoutube;
-  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, serial = _.serial, parallel = _.parallel, wait = _.wait, ok = _.assertOk;
+  var addTmpListing, cleanDb, e, eq, getTestLink, listingModels, map, ne, noSee, ok, parallel, preRun, savingAListing, see, series, server, test, tests, testsComplete, wait, waitForYoutube;
+  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk;
   tests = {};
   test = function(title, func) {
     return tests[title] = func;
@@ -282,10 +282,16 @@ runTests = null;
         $("#email").length.shouldBe(1, "see email field");
         $("#question:visible").length.shouldBe(1, "see password question");
         $("#password:visible").length.shouldBe(1, "see password");
-        _.assertOk(!($("#sign-in").is(":visible")), "shouldnt see sign in");
+        eq($("#cancel-signin:visible").length, 1, "see cancel sign in");
         return done();
       }
     ], function(err, results) {
+      return done();
+    });
+  });
+  test("cancel sign in ", function(done) {
+    return series([app.signInView.triggerSignInClick, app.signInView.triggerCancelClick], function(err, results) {
+      eq(app.signInView.visible, false, "shouln't see the popup");
       return done();
     });
   });

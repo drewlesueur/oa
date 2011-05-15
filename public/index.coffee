@@ -116,7 +116,6 @@ class GoogleMap extends Backbone.View
       listing.view.handleBubbleClose()
 
       
-     
   updateCurrentBubbleNotes: (notes, cb=->) =>
     if not @tempListing then return cb()
     cb()
@@ -270,18 +269,31 @@ class SignInView extends Backbone.View
   
   constructor: () ->
     super
+    @visible = false
     $("#sign-in").click (e) =>
-      e.preventDefault()
-      @triggerSignInClick 
+      @triggerSignInClick() 
+  triggerCancelClick: (done=->) =>
+    @hidePopUp done  
+  hidePopUp: (done=->) =>
+    @SignInDiv.hide =>
+      @visible = false
+      done()
+  showPupUp: (d=->) =>
+    @SignInDiv.show =>
+      @visible = true
+      d()
   triggerSignInClick: (done=->) =>
     if not @SignInDiv
       @SignInDiv ||= @getSignInDiv()
       $("#login-area").append @SignInDiv
-      done()
-    else if @SignInDiv.is ":visible"
-      @SignInDiv.hide done
+      @SignInDiv.find('#cancel-sign-in').click (e) =>
+        e.preventDefault()
+        @triggerCancelClick()
+    
+    if @SignInDiv.is ":visible"
+      @hidePopUp done
     else
-      @SignInDiv.show done
+      @showPupUp done
 
       
   getSignInDiv: () =>
@@ -289,7 +301,7 @@ class SignInView extends Backbone.View
       val = question.replace /[^\w]/g, "_"
       "<option value=\"#{val}\">#{question}</option>"
     $ """
-      <div class="login">
+      <div class="login" style="display:none;" id="login-pop-up">
         <div class="notes">#{@signInText}</div> 
         <form>
           <input type="text" id="email" placeholder="email">
@@ -301,6 +313,7 @@ class SignInView extends Backbone.View
           <input type="text" id="password" placeholder="ansswer"/>
           <br />
           <input type="submit" value="Sign In"/>
+          <a href="#" id="cancel-sign-in">Cancel</a>
         </form>
       </div>
 
