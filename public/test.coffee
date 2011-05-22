@@ -305,6 +305,28 @@ do () ->
     ], (err, results) ->
       eq app.signInView.visible, false, "shouln't see the popup"
       done() 
+
+  test "can login (can sign in)", (d) ->
+    series [
+      (d) -> server "deleteTestUsers", -> d()
+      app.signInView.triggerSignInClick
+      (d) ->
+        $('#email').val "drewalex@gmail.com"
+        $('#question').val "What_is_your_fav_color_"
+        $('#password').val "blue"
+        log "going to submit sign in"
+        app.signInView.submit () ->
+          log "done submitting sign in "
+          d()
+    ], (err) ->
+      eq err, null, "no error on logging in"
+      ok app.signInView.visible == false, "no see popup"
+      see "signed in as drewalex@gmail.com"
+      d()
+      
+
+      
+
   test "new wait syntax", (done) ->
     1000.wait () -> 
       console.log "waited"
@@ -324,18 +346,6 @@ do () ->
   listingModels = null
   map = null
 
-  server = (method, callback) ->
-    if _.isArray method
-      [method, args...] = method
-    $.ajax 
-      url: "/#{method}"
-      type: "POST"
-      contentType: 'application/json'
-      data: args
-      dataType: 'json'
-      processData: false
-      success: (data) -> callback null, data
-      error: (data) -> callback data
 
   testsComplete = (err, results) -> 
     server "cleanUpTestDb", (err, result) ->

@@ -1,12 +1,37 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, SignInView, YoutubeParser, liteAlert;
-var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, liteAlert, log, server;
+var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
   ctor.prototype = parent.prototype;
   child.prototype = new ctor;
   child.__super__ = parent.prototype;
   return child;
-}, __slice = Array.prototype.slice;
+};
+log = function() {
+  var args;
+  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+  return console.log.apply(console, args);
+};
+server = function(method, callback) {
+  var args, _ref;
+  if (_.isArray(method)) {
+    _ref = method, method = _ref[0], args = _ref[1];
+  }
+  return $.ajax({
+    url: "/" + method,
+    type: "POST",
+    contentType: 'application/json',
+    data: JSON.stringify(args),
+    dataType: 'json',
+    processData: false,
+    success: function(data) {
+      return callback(null, data);
+    },
+    error: function(data) {
+      return callback(data);
+    }
+  });
+};
 liteAlert = function(message) {
   return console.log(message);
 };
@@ -360,81 +385,6 @@ OfficeListController = (function() {
   };
   return OfficeListController;
 })();
-SignInView = (function() {
-  __extends(SignInView, Backbone.View);
-  SignInView.prototype.questions = ["What is your fav color?", "What is your dogs maiden name?", "How many pet hampsters do you have?"];
-  SignInView.prototype.signUpText = "Just type in an email and choose a question and answer";
-  SignInView.prototype.signInText = "Type in your email and choose your question and answer";
-  function SignInView() {
-    this.getSignInDiv = __bind(this.getSignInDiv, this);
-    this.triggerSignInClick = __bind(this.triggerSignInClick, this);
-    this.showPupUp = __bind(this.showPupUp, this);
-    this.hidePopUp = __bind(this.hidePopUp, this);
-    this.triggerCancelClick = __bind(this.triggerCancelClick, this);    SignInView.__super__.constructor.apply(this, arguments);
-    this.visible = false;
-    $("#sign-in").click(__bind(function(e) {
-      return this.triggerSignInClick();
-    }, this));
-  }
-  SignInView.prototype.triggerCancelClick = function(done) {
-    if (done == null) {
-      done = function() {};
-    }
-    return this.hidePopUp(done);
-  };
-  SignInView.prototype.hidePopUp = function(done) {
-    if (done == null) {
-      done = function() {};
-    }
-    return this.SignInDiv.hide(__bind(function() {
-      this.visible = false;
-      return done();
-    }, this));
-  };
-  SignInView.prototype.showPupUp = function(d) {
-    if (d == null) {
-      d = function() {};
-    }
-    return this.SignInDiv.show(__bind(function() {
-      this.visible = true;
-      return d();
-    }, this));
-  };
-  SignInView.prototype.triggerSignInClick = function(done) {
-    if (done == null) {
-      done = function() {};
-    }
-    if (!this.SignInDiv) {
-      this.SignInDiv || (this.SignInDiv = this.getSignInDiv());
-      $("#login-area").append(this.SignInDiv);
-      this.SignInDiv.find('#cancel-sign-in').click(__bind(function(e) {
-        e.preventDefault();
-        return this.triggerCancelClick();
-      }, this));
-    }
-    if (this.SignInDiv.is(":visible")) {
-      return this.hidePopUp(done);
-    } else {
-      return this.showPupUp(done);
-    }
-  };
-  SignInView.prototype.getSignInDiv = function() {
-    var question, questions, val;
-    questions = (function() {
-      var _i, _len, _ref, _results;
-      _ref = this.questions;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        question = _ref[_i];
-        val = question.replace(/[^\w]/g, "_");
-        _results.push("<option value=\"" + val + "\">" + question + "</option>");
-      }
-      return _results;
-    }).call(this);
-    return $("<div class=\"login\" style=\"display:none;\" id=\"login-pop-up\">\n  <div class=\"notes\">" + this.signInText + "</div> \n  <form>\n    <input type=\"text\" id=\"email\" placeholder=\"email\">\n    <br />\n    <select id=\"question\">\n      " + questions + "\n    </select>\n    <br/>\n    <input type=\"text\" id=\"password\" placeholder=\"ansswer\"/>\n    <br />\n    <input type=\"submit\" value=\"Sign In\"/>\n    <a href=\"#\" id=\"cancel-sign-in\">Cancel</a>\n  </form>\n</div>\n");
-  };
-  return SignInView;
-})();
 OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleRefreshedListings = function() {
     var listing, _i, _len, _ref, _results;
@@ -507,7 +457,6 @@ OfficeListPresenter = (function() {
       return this.map.removeListing(model);
     }, this));
     listing.bind("change:notes", __bind(function() {
-      console.log("notes changed");
       return this.handleNotesChange(listing);
     }, this));
     listing.bind("change:youtube", __bind(function() {
@@ -571,7 +520,17 @@ OfficeListPresenter = (function() {
       return this.tempListing.view.removeVideo();
     }
   };
+  OfficeListPresenter.prototype.handleSignIn = function(values, d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return server(["sessions", values], __bind(function(err, result) {
+      this.signInView.hidePopUp();
+      return this.signInView.showSignedInAs(values.email);
+    }, this));
+  };
   function OfficeListPresenter() {
+    this.handleSignIn = __bind(this.handleSignIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);
@@ -601,6 +560,7 @@ OfficeListPresenter = (function() {
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
+    this.map.bind("signin", this.handleSignIn);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: $(window).width() - 300 + "px",
@@ -620,7 +580,8 @@ OfficeListPresenter = (function() {
         _ref.getCurrentPosition(onLoc);
       }
     }
-    this.signInView = new SignInView();
+    this.signInView = new SignInView(this.map);
+    $('#login-wrapper').append(this.signInView.el);
   }
   return OfficeListPresenter;
 })();

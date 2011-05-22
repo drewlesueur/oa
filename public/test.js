@@ -41,7 +41,7 @@ for (name in toMonkeyPatch) {
 runTest = null;
 runTests = null;
 (function() {
-  var addTmpListing, cleanDb, e, eq, getTestLink, listingModels, map, ne, noSee, ok, parallel, preRun, savingAListing, see, series, server, test, tests, testsComplete, wait, waitForYoutube;
+  var addTmpListing, cleanDb, e, eq, getTestLink, listingModels, map, ne, noSee, ok, parallel, preRun, savingAListing, see, series, test, tests, testsComplete, wait, waitForYoutube;
   see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk;
   tests = {};
   test = function(title, func) {
@@ -295,6 +295,29 @@ runTests = null;
       return done();
     });
   });
+  test("can login (can sign in)", function(d) {
+    return series([
+      function(d) {
+        return server("deleteTestUsers", function() {
+          return d();
+        });
+      }, app.signInView.triggerSignInClick, function(d) {
+        $('#email').val("drewalex@gmail.com");
+        $('#question').val("What_is_your_fav_color_");
+        $('#password').val("blue");
+        log("going to submit sign in");
+        return app.signInView.submit(function() {
+          log("done submitting sign in ");
+          return d();
+        });
+      }
+    ], function(err) {
+      eq(err, null, "no error on logging in");
+      ok(app.signInView.visible === false, "no see popup");
+      see("signed in as drewalex@gmail.com");
+      return d();
+    });
+  });
   test("new wait syntax", function(done) {
     (1000).wait(function() {
       console.log("waited");
@@ -313,26 +336,6 @@ runTests = null;
   });
   listingModels = null;
   map = null;
-  server = function(method, callback) {
-    var args, _ref;
-    if (_.isArray(method)) {
-      _ref = method, method = _ref[0], args = 2 <= _ref.length ? __slice.call(_ref, 1) : [];
-    }
-    return $.ajax({
-      url: "/" + method,
-      type: "POST",
-      contentType: 'application/json',
-      data: args,
-      dataType: 'json',
-      processData: false,
-      success: function(data) {
-        return callback(null, data);
-      },
-      error: function(data) {
-        return callback(data);
-      }
-    });
-  };
   testsComplete = function(err, results) {
     server("cleanUpTestDb", function(err, result) {
       if (!err) {

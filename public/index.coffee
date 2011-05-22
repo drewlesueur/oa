@@ -1,3 +1,18 @@
+log = (args...) ->
+  console.log args...
+server = (method, callback) ->
+  if _.isArray method
+    [method, args] = method
+  $.ajax 
+    url: "/#{method}"
+    type: "POST"
+    contentType: 'application/json'
+    data: JSON.stringify args
+    dataType: 'json'
+    processData: false
+    success: (data) -> callback null, data
+    error: (data) -> callback data
+
 liteAlert = (message) ->
   console.log message
 
@@ -53,7 +68,7 @@ _.each ['s'], (method) ->
 
 
 
-    
+#this class is really the main view    
 class GoogleMap extends Backbone.View
   constructor: (width, height) ->
     @el = $ @make "div"
@@ -258,66 +273,6 @@ class OfficeListController extends Backbone.Controller
     runTests() 
 
     
-class SignInView extends Backbone.View
-  questions: [
-    "What is your fav color?"
-    "What is your dogs maiden name?"
-    "How many pet hampsters do you have?"
-  ]
-  signUpText: "Just type in an email and choose a question and answer"
-  signInText: "Type in your email and choose your question and answer"
-  
-  constructor: () ->
-    super
-    @visible = false
-    $("#sign-in").click (e) =>
-      @triggerSignInClick() 
-  triggerCancelClick: (done=->) =>
-    @hidePopUp done  
-  hidePopUp: (done=->) =>
-    @SignInDiv.hide =>
-      @visible = false
-      done()
-  showPupUp: (d=->) =>
-    @SignInDiv.show =>
-      @visible = true
-      d()
-  triggerSignInClick: (done=->) =>
-    if not @SignInDiv
-      @SignInDiv ||= @getSignInDiv()
-      $("#login-area").append @SignInDiv
-      @SignInDiv.find('#cancel-sign-in').click (e) =>
-        e.preventDefault()
-        @triggerCancelClick()
-    
-    if @SignInDiv.is ":visible"
-      @hidePopUp done
-    else
-      @showPupUp done
-
-      
-  getSignInDiv: () =>
-    questions = for question in @questions
-      val = question.replace /[^\w]/g, "_"
-      "<option value=\"#{val}\">#{question}</option>"
-    $ """
-      <div class="login" style="display:none;" id="login-pop-up">
-        <div class="notes">#{@signInText}</div> 
-        <form>
-          <input type="text" id="email" placeholder="email">
-          <br />
-          <select id="question">
-            #{questions}
-          </select>
-          <br/>
-          <input type="text" id="password" placeholder="ansswer"/>
-          <br />
-          <input type="submit" value="Sign In"/>
-          <a href="#" id="cancel-sign-in">Cancel</a>
-        </form>
-      </div>
-
-    """
 
 class OfficeListPresenter
   handleRefreshedListings: () =>
@@ -361,7 +316,6 @@ class OfficeListPresenter
     listing.bind "remove", (model, collection) =>
       @map.removeListing model
     listing.bind "change:notes", () => 
-      console.log "notes changed"
       @handleNotesChange listing
     listing.bind "change:youtube", () => @handleListingChange listing
 
@@ -396,6 +350,15 @@ class OfficeListPresenter
   handleMapCenterChanged: (cb=->) =>
     if @tempListing
       @tempListing.view.removeVideo()
+  handleSignIn: (values, d=->) =>
+    server ["sessions", values], (err, result) =>
+      @signInView.hidePopUp()
+      @signInView.showSignedInAs values.email
+      # sucedio 
+      
+      
+    
+
   constructor: () ->
     _.extend @, Backbone.Events
     $('#listing-form').submit (e) =>
@@ -411,11 +374,14 @@ class OfficeListPresenter
     @listings.bind "refresh", @handleRefreshedListings
     @listings.bind "add", @handleAddedListing
     @listings.fetch()
+    # bunch of view bindings
+    # @map really should be @view
     @map.bind "addresschange", @addTmpListing
     @map.bind "noteschange", @handleAppNotesChange
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
     @map.bind "mapcenterchanged", @handleMapCenterChanged
+    @map.bind "signin", @handleSignIn
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css
@@ -433,7 +399,9 @@ class OfficeListPresenter
       @map.map.setCenter(latLng)
   
     navigator.geolocation?.getCurrentPosition?(onLoc)
-    @signInView = new SignInView()
+    @signInView = new SignInView(@map)
+# Should this code be here
+    $('#login-wrapper').append @signInView.el
 
     
 
