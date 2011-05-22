@@ -537,7 +537,20 @@ OfficeListPresenter = (function() {
       });
     }, this));
   };
+  OfficeListPresenter.prototype.handleSignOut = function(d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return server("signout", __bind(function(err, result) {
+      if (err) {
+        return alert("there was a problem signing out");
+      }
+      this.signInView.hideSignedInAs();
+      return d();
+    }, this));
+  };
   function OfficeListPresenter() {
+    this.handleSignOut = __bind(this.handleSignOut, this);
     this.handleSignIn = __bind(this.handleSignIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
@@ -569,6 +582,7 @@ OfficeListPresenter = (function() {
     this.map.bind("reload", this.handleReload);
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
     this.map.bind("signin", this.handleSignIn);
+    this.map.bind("signout", this.handleSignOut);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: $(window).width() - 300 + "px",
@@ -589,6 +603,12 @@ OfficeListPresenter = (function() {
       }
     }
     this.signInView = new SignInView(this.map);
+    log("who am i");
+    server("whoami", __bind(function(err, data) {
+      if (data.email) {
+        return this.signInView.showSignedInAs(data.email);
+      }
+    }, this));
     $('#login-wrapper').append(this.signInView.el);
   }
   return OfficeListPresenter;

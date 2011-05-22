@@ -92,7 +92,6 @@ pg "/p", (req, res) ->
   res.send "that is all"
 
 pg "/whoami", (req, res) ->
-  console.log req.session
   res.send req.session
   
 
@@ -114,7 +113,11 @@ userExists = (email, cb=->) ->
     else 
       cb null, false
 
-      
+#not restful, but I'll worry about it later
+pg "/signout", (req, res) ->
+  delete req.session.email
+  res.send you: "did it"
+
 app.post "/sessions", (req, res) ->
   userExists req.body.email, (err, result) ->
     if result is true
@@ -129,9 +132,14 @@ app.post "/sessions", (req, res) ->
     else
 
       # just create the user
-      db.insert "users", req.body, (err) ->
+      #db.insert "users", req.body, (err) ->
+      {email, question, password} = req.body
+      db.query """
+        insert into users (email, question, password)
+        values
+        (?, ?, password(?))
+      """, [email, question, password], (err) ->
         req.session.email = req.body.email
-        log "creating a user"
         if err then return res.send {error: "couldn't create user"}, 500
         res.send {"message": "created user"} #200
 

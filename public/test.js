@@ -316,29 +316,41 @@ runTests = null;
     return d();
   });
   test("can login (can sign in)", function(d) {
+    var logInTests, login, rightCreds;
+    login = function(d) {
+      app.signInView.el.find('.email').val("drewalex@gmail.com");
+      app.signInView.el.find('.question').val("What_is_your_fav_color_");
+      app.signInView.el.find('.password').val("blue");
+      return app.signInView.submit(function() {
+        return d();
+      });
+    };
+    rightCreds = function(d) {
+      return server("whoami", function(err, result) {
+        eq(result.email, "drewalex@gmail.com", "should have my email");
+        return d();
+      });
+    };
+    logInTests = function(d) {
+      ok(app.signInView.visible === false, "no see popup");
+      log(app.signInView.el.find(".signed-in-as"));
+      ok(app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1, "should see signed in as");
+      ok(app.signInView.el.find(".sign-out").is(":visible"), "should see sign out");
+      return d();
+    };
     return series([
       function(d) {
         return server("deleteTestUsers", function() {
           return d();
         });
-      }, app.signInView.triggerSignInClick, function(d) {
-        app.signInView.el.find('.email').val("drewalex@gmail.com");
-        app.signInView.el.find('.question').val("What_is_your_fav_color_");
-        app.signInView.el.find('.password').val("blue");
-        return app.signInView.submit(function() {
-          return d();
-        });
-      }, function(d) {
+      }, app.signInView.triggerSignInClick, login, rightCreds, logInTests, app.signInView.triggerSignOutClick, function(d) {
         return server("whoami", function(err, result) {
-          eq(result.email, "drewalex@gmail.com", "should have my email");
+          ok(!("email" in result));
           return d();
         });
-      }
+      }, login, rightCreds, logInTests
     ], function(err) {
       eq(err, null, "no error on logging in");
-      ok(app.signInView.visible === false, "no see popup");
-      log(app.signInView.el.find(".signed-in-as"));
-      ok(app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1, "should see signed in as");
       return d();
     });
   });

@@ -324,7 +324,32 @@ do () ->
     eq $("#sign-in-view .sign-out").is(":visible"), false
     d()
 
+
+  #TODO: haven't tested initial login
   test "can login (can sign in)", (d) ->
+
+    login = (d) ->
+      app.signInView.el.find('.email').val "drewalex@gmail.com"
+      app.signInView.el.find('.question').val "What_is_your_fav_color_"
+      app.signInView.el.find('.password').val "blue"
+      app.signInView.submit () ->
+        d()
+    
+    rightCreds = (d) ->
+      server "whoami", (err, result) ->
+        eq result.email, "drewalex@gmail.com", "should have my email"
+        d()
+
+    logInTests = (d) ->
+      ok app.signInView.visible == false, "no see popup"
+      log app.signInView.el.find(".signed-in-as")
+      ok app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1,
+         "should see signed in as"
+      ok app.signInView.el.find(".sign-out").is(":visible"),
+        "should see sign out"
+      d()
+
+
     series [
       # delete test users
       (d) -> server "deleteTestUsers", -> d()
@@ -333,27 +358,31 @@ do () ->
       app.signInView.triggerSignInClick
 
       # set values
-      (d) ->
-        app.signInView.el.find('.email').val "drewalex@gmail.com"
-        app.signInView.el.find('.question').val "What_is_your_fav_color_"
-        app.signInView.el.find('.password').val "blue"
-        app.signInView.submit () ->
-          d()
+      login
 
       # make sure you have the right cookies 
+      rightCreds
+
+      # some tests 
+      logInTests
+
+      # now ou should be able to log out
+      app.signInView.triggerSignOutClick 
+
+      # make sure you have don't have the right cookies 
       (d) ->
         server "whoami", (err, result) ->
-          eq result.email, "drewalex@gmail.com", "should have my email"
+          ok ("email" not of result)
           d()
 
+      # Now make sure you can log in again with same creds
+      login
+      rightCreds
+      logInTests
           
         
     ], (err) ->
       eq err, null, "no error on logging in"
-      ok app.signInView.visible == false, "no see popup"
-      log app.signInView.el.find(".signed-in-as")
-      ok app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1,
-         "should see signed in as"
 
       d()
       

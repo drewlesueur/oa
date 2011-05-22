@@ -365,15 +365,25 @@ class OfficeListPresenter
         (d) => @signInView.showSignedInAs values.email;d()
       ], (err) -> d()
       # sucedio 
+  handleSignOut: (d=->) =>
+    server "signout", (err, result) =>
+      if err then return alert "there was a problem signing out"
+      @signInView.hideSignedInAs()
+      d()
+
+
       
       
     
 
   constructor: () ->
     _.extend @, Backbone.Events
+
+    # this should be moved if it's not already
     $('#listing-form').submit (e) =>
       e.preventDefault()
       @handleSubmit()
+
 
     @officeListController = new OfficeListController
     Backbone.history.start()
@@ -392,6 +402,8 @@ class OfficeListPresenter
     @map.bind "reload", @handleReload
     @map.bind "mapcenterchanged", @handleMapCenterChanged
     @map.bind "signin", @handleSignIn
+    @map.bind "signout", @handleSignOut
+    
 
     $('#map-wrapper').append @map.el
     $('#map-wrapper').css
@@ -410,6 +422,10 @@ class OfficeListPresenter
   
     navigator.geolocation?.getCurrentPosition?(onLoc)
     @signInView = new SignInView(@map)
+    log "who am i"
+    server "whoami", (err, data) =>
+      if data.email
+        @signInView.showSignedInAs data.email
 # Should this code be here
     $('#login-wrapper').append @signInView.el
 

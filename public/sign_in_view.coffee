@@ -59,6 +59,9 @@ class SignInView extends Backbone.View
     @el.find(".sign-in").click (e) =>
       e.preventDefault()
       @triggerSignInClick() 
+    @el.find(".sign-out").click (e) =>
+      e.preventDefault()
+      @triggerSignOutClick()
   triggerCancelClick: (done=->) =>
     @hidePopUp done  
   hidePopUp: (done=->) =>
@@ -73,6 +76,12 @@ class SignInView extends Backbone.View
     @el.find(".signed-in-as").text email  #for our time
     @el.find(".signed-in").css display:"block"
     @el.find(".sign-in-wrapper").css display:"none"
+  hideSignedInAs: () =>
+    @el.find(".signed-in-as").text ""
+    @el.find(".signed-in").css display:"none"
+    @el.find(".sign-in-wrapper").css display:"block"
+    
+    
     
   submit: (d=->) =>
     values =
@@ -87,5 +96,7 @@ class SignInView extends Backbone.View
       @hidePopUp done
     else
       @showPopUp done
+  triggerSignOutClick: (d=->) =>
+    @mainView.trigger "signout", d
 
       
