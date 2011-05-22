@@ -67,6 +67,13 @@ _.each ['s'], (method) ->
     return _[method].apply _, [this.models].concat _.toArray arguments
 
 
+# some coffeescript destructuring assignments
+{
+  series: series
+  parallel: parallel
+  wait: wait
+  keys: keys
+} = _
 
 #this class is really the main view    
 class GoogleMap extends Backbone.View
@@ -351,9 +358,12 @@ class OfficeListPresenter
     if @tempListing
       @tempListing.view.removeVideo()
   handleSignIn: (values, d=->) =>
+    log values
     server ["sessions", values], (err, result) =>
-      @signInView.hidePopUp()
-      @signInView.showSignedInAs values.email
+      series [
+        @signInView.hidePopUp
+        (d) => @signInView.showSignedInAs values.email;d()
+      ], (err) -> d()
       # sucedio 
       
       

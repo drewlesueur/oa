@@ -41,8 +41,8 @@ for (name in toMonkeyPatch) {
 runTest = null;
 runTests = null;
 (function() {
-  var addTmpListing, cleanDb, e, eq, getTestLink, listingModels, map, ne, noSee, ok, parallel, preRun, savingAListing, see, series, test, tests, testsComplete, wait, waitForYoutube;
-  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk;
+  var addTmpListing, cleanDb, e, eq, getTestLink, key, keys, listingModels, map, ne, newTests, noSee, ok, parallel, preRun, savingAListing, see, series, test, testKeys, tests, testsComplete, wait, waitForYoutube, _i, _len;
+  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys;
   tests = {};
   test = function(title, func) {
     return tests[title] = func;
@@ -295,29 +295,6 @@ runTests = null;
       return done();
     });
   });
-  test("can login (can sign in)", function(d) {
-    return series([
-      function(d) {
-        return server("deleteTestUsers", function() {
-          return d();
-        });
-      }, app.signInView.triggerSignInClick, function(d) {
-        $('#email').val("drewalex@gmail.com");
-        $('#question').val("What_is_your_fav_color_");
-        $('#password').val("blue");
-        log("going to submit sign in");
-        return app.signInView.submit(function() {
-          log("done submitting sign in ");
-          return d();
-        });
-      }
-    ], function(err) {
-      eq(err, null, "no error on logging in");
-      ok(app.signInView.visible === false, "no see popup");
-      see("signed in as drewalex@gmail.com");
-      return d();
-    });
-  });
   test("new wait syntax", function(done) {
     (1000).wait(function() {
       console.log("waited");
@@ -334,6 +311,45 @@ runTests = null;
       return done();
     });
   });
+  test("shouldnt see sign out", function(d) {
+    eq($("#sign-in-view .sign-out").is(":visible"), false);
+    return d();
+  });
+  test("can login (can sign in)", function(d) {
+    return series([
+      function(d) {
+        return server("deleteTestUsers", function() {
+          return d();
+        });
+      }, app.signInView.triggerSignInClick, function(d) {
+        app.signInView.el.find('.email').val("drewalex@gmail.com");
+        app.signInView.el.find('.question').val("What_is_your_fav_color_");
+        app.signInView.el.find('.password').val("blue");
+        return app.signInView.submit(function() {
+          return d();
+        });
+      }, function(d) {
+        return server("whoami", function(err, result) {
+          eq(result.email, "drewalex@gmail.com", "should have my email");
+          return d();
+        });
+      }
+    ], function(err) {
+      eq(err, null, "no error on logging in");
+      ok(app.signInView.visible === false, "no see popup");
+      log(app.signInView.el.find(".signed-in-as"));
+      ok(app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1, "should see signed in as");
+      return d();
+    });
+  });
+  testKeys = keys(tests).reverse();
+  log(testKeys);
+  newTests = {};
+  for (_i = 0, _len = testKeys.length; _i < _len; _i++) {
+    key = testKeys[_i];
+    newTests[key] = tests[key];
+  }
+  tests = newTests;
   listingModels = null;
   map = null;
   testsComplete = function(err, results) {
@@ -373,7 +389,6 @@ runTests = null;
   };
   return runTests = function() {
     return _.wait(1000, function() {
-      var newTests;
       preRun();
       newTests = {};
       _.each(tests, function(test, key) {

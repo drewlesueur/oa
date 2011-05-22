@@ -53,6 +53,7 @@ do () ->
     parallel: parallel
     wait: wait
     assertOk: ok
+    keys: keys
   } = _
   
   
@@ -306,27 +307,6 @@ do () ->
       eq app.signInView.visible, false, "shouln't see the popup"
       done() 
 
-  test "can login (can sign in)", (d) ->
-    series [
-      (d) -> server "deleteTestUsers", -> d()
-      app.signInView.triggerSignInClick
-      (d) ->
-        $('#email').val "drewalex@gmail.com"
-        $('#question').val "What_is_your_fav_color_"
-        $('#password').val "blue"
-        log "going to submit sign in"
-        app.signInView.submit () ->
-          log "done submitting sign in "
-          d()
-    ], (err) ->
-      eq err, null, "no error on logging in"
-      ok app.signInView.visible == false, "no see popup"
-      see "signed in as drewalex@gmail.com"
-      d()
-      
-
-      
-
   test "new wait syntax", (done) ->
     1000.wait () -> 
       console.log "waited"
@@ -337,12 +317,60 @@ do () ->
       eq "this", "this", "shorthand equal"
       ne "that", "this", "shortahdn not equal"
       see "office", "should see office"
-      
-
     wait 2000, () -> 
       done()
+
+  test "shouldnt see sign out", (d) ->
+    eq $("#sign-in-view .sign-out").is(":visible"), false
+    d()
+
+  test "can login (can sign in)", (d) ->
+    series [
+      # delete test users
+      (d) -> server "deleteTestUsers", -> d()
+
+      #sign in 
+      app.signInView.triggerSignInClick
+
+      # set values
+      (d) ->
+        app.signInView.el.find('.email').val "drewalex@gmail.com"
+        app.signInView.el.find('.question').val "What_is_your_fav_color_"
+        app.signInView.el.find('.password').val "blue"
+        app.signInView.submit () ->
+          d()
+
+      # make sure you have the right cookies 
+      (d) ->
+        server "whoami", (err, result) ->
+          eq result.email, "drewalex@gmail.com", "should have my email"
+          d()
+
+          
+        
+    ], (err) ->
+      eq err, null, "no error on logging in"
+      ok app.signInView.visible == false, "no see popup"
+      log app.signInView.el.find(".signed-in-as")
+      ok app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1,
+         "should see signed in as"
+
+      d()
       
 
+      
+
+  
+  testKeys = keys(tests).reverse()
+  # testsKeys = reverse keys tests
+  # testKeys = tests.keys().reverse()
+  
+  log testKeys
+  newTests = {}
+  for key in testKeys
+    newTests[key] = tests[key]
+  tests = newTests
+  
   listingModels = null
   map = null
 

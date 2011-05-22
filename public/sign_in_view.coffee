@@ -17,10 +17,10 @@ class SignInView extends Backbone.View
           <div class="sign-in-wrapper">
             <a href="#" class="sign-in">Sign In</a> 
           </div>
-          <div class="signed-in">
-            <span class="signed-in-as-text>Signed in as</span>
+          <div class="signed-in" style="display:none;">
+            <span class="signed-in-as-text">Signed in as</span>
             <span class="signed-in-as"></span>
-            <a href="#" class="sign-out">Sign Out</a>
+            <a href="#" class="sign-out" >Sign Out</a>
           </div>
         </div>
         <div class="login-area">
@@ -69,14 +69,17 @@ class SignInView extends Backbone.View
     @SignInDiv.show =>
       @visible = true
       d()
-  showSignedInAs: () => 
+  showSignedInAs: (email) => 
+    @el.find(".signed-in-as").text email  #for our time
+    @el.find(".signed-in").css display:"block"
+    @el.find(".sign-in-wrapper").css display:"none"
     
   submit: (d=->) =>
-    @mainView.trigger "signin",
-      email: $("##{@divId} .email").val()
-      question: $("##{@divId} .question").val()
-      password: $("##{@divId} .password").val()
-      , d
+    values =
+      email: @el.find(".email").val()
+      question: @el.find(".question").val()
+      password: @el.find(".password").val()
+    @mainView.trigger "signin", values, d
     
   triggerSignInClick: (done=->) =>
     

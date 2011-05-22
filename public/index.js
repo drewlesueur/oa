@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, liteAlert, log, server;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, keys, liteAlert, log, parallel, series, server, wait;
 var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -92,6 +92,7 @@ _.each(['s'], function(method) {
     return _[method].apply(_, [this.models].concat(_.toArray(arguments)));
   };
 });
+series = _.series, parallel = _.parallel, wait = _.wait, keys = _.keys;
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
@@ -524,9 +525,16 @@ OfficeListPresenter = (function() {
     if (d == null) {
       d = function() {};
     }
+    log(values);
     return server(["sessions", values], __bind(function(err, result) {
-      this.signInView.hidePopUp();
-      return this.signInView.showSignedInAs(values.email);
+      return series([
+        this.signInView.hidePopUp, __bind(function(d) {
+          this.signInView.showSignedInAs(values.email);
+          return d();
+        }, this)
+      ], function(err) {
+        return d();
+      });
     }, this));
   };
   function OfficeListPresenter() {
