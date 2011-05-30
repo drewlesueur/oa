@@ -15,7 +15,7 @@ class SignInView extends Backbone.View
       <div id="#{@divId}">
         <div class="top-bar">
           <div class="sign-in-wrapper">
-            <a href="#" class="sign-in">Sign In</a> 
+            <a href="#" class="sign-in">Sign In/Sign up</a> 
           </div>
           <div class="signed-in" style="display:none;">
             <span class="signed-in-as-text">Signed in as</span>
@@ -51,6 +51,8 @@ class SignInView extends Backbone.View
       e.preventDefault()
       @triggerCancelClick()
     @SignInDiv = @el.find '.login'
+    @SignInDiv.find('.email').bind "change", (e) =>
+      @triggerEmailEntered()
     @SignInDiv.find('form').submit (e) =>
       e.preventDefault()
       @submit()
@@ -62,6 +64,12 @@ class SignInView extends Backbone.View
     @el.find(".sign-out").click (e) =>
       e.preventDefault()
       @triggerSignOutClick()
+  setQuestion: (val) =>
+    @el.find(".question").val val
+  focusAnswer: () =>
+    @el.find(".password")[0].focus()
+  triggerEmailEntered: (d=->) =>
+    @mainView.trigger "emailentered", @el.find(".email").val(), d
   triggerCancelClick: (done=->) =>
     @hidePopUp done  
   hidePopUp: (done=->) =>

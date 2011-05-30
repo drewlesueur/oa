@@ -96,10 +96,13 @@ pg "/p", (req, res) ->
 pg "/whoami", (req, res) ->
   res.send req.session
   
+pg "/questions/:email", (req, res) ->
+  db.query "select question from users where email = ?", [req.params.email], (err, result) ->
+    if err then return res.send err, 500
+    if result.length then return res.send result[0]
+    res.send {error: err}, 400 
 
 app.post "/listings", (req, res) ->
-  console.log "you tried to post a listing!"
-  console.log req.body
   db.insert "listings", req.body, (err) ->
     if err
       console.log "there was an error"  

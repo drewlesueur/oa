@@ -279,7 +279,7 @@ runTests = null;
   test("there should be a big play button", function(done) {
     return done();
   });
-  test("There should be a login", function(done) {
+  test("There should be a signin / sign up", function(done) {
     $(".sign-in").length.shouldBe(1, "should be login");
     return done();
   });
@@ -379,6 +379,28 @@ runTests = null;
       return d();
     });
   });
+  test("auto fill in the question", function(d) {
+    return server([
+      "sessions", {
+        email: "drewalex@gmail.com",
+        question: "What_is_your_fav_color_",
+        password: "blue"
+      }
+    ], function(err, result) {
+      var onEmailEntered;
+      app.signInView.triggerSignInClick();
+      $(".question").val("What_is_your_dogs_maiden_name_");
+      $(".email").val("drewalex@gmail.com");
+      app.signInView.triggerEmailEntered();
+      onEmailEntered = function() {
+        eq($(".question").val(), "What_is_your_fav_color_", "auto fill in quesiton");
+        app.signInView.triggerCancelClick();
+        app.unbind("doneLookupQuestion", onEmailEntered);
+        return d();
+      };
+      return app.bind("doneLookupQuestion", onEmailEntered);
+    });
+  });
   test("server test", function(d) {
     return server("json_test", function(err, json) {
       eq(err, null, "should not get error from test json");
@@ -386,6 +408,9 @@ runTests = null;
       eq(json.band.name, "aterciopelados");
       return d();
     });
+  });
+  test("editing a listing", function(d) {
+    return d();
   });
   testKeys = keys(tests).reverse();
   log(testKeys);

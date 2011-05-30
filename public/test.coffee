@@ -84,6 +84,7 @@ do () ->
     done(null)
 
   test "I should see the info bubble when clicking on the marker", (done) ->
+    #TODO should this be trigger?
     listingModels[0].view.handleMarkerClick()
     _.wait waitForYoutube, () ->
       _.assertEqual $("body:contains('gilbert, az'):visible").length, 1,
@@ -105,6 +106,7 @@ do () ->
       console.log "done adding temporary listing"
       console.log app.tempListing
       _.assertSee "These notes are my own", "see the notes of a listing"
+      #TODO change this to triggerSubmit ...
       app.handleSubmit () ->
         _.assertEqual $('#notes').val(), "",
         "Notes field should be empty"
@@ -280,6 +282,7 @@ do () ->
       _.wait waitForYoutube, -> 
         listing.view.triggerYoutubeImageClick () ->
           _.wait 1000, () ->
+            #TODO should this be trigger?
             listing.view.handleBubbleClose()
             _.assertEqual $('iframe').length, 0, "wax off"
             done()
@@ -288,7 +291,7 @@ do () ->
     #TODO make a big play button
     done()
 
-  test "There should be a login", (done) ->
+  test "There should be a signin / sign up", (done) ->
     $(".sign-in").length.shouldBe 1, "should be login"
     done()
 
@@ -415,13 +418,42 @@ do () ->
 
       d()
       
+  test "auto fill in the question", (d) ->
+    server ["sessions", {
+      email: "drewalex@gmail.com" 
+      question: "What_is_your_fav_color_"
+      password: "blue"
+    }], (err, result) ->
+      
 
+      app.signInView.triggerSignInClick()
+      $(".question").val "What_is_your_dogs_maiden_name_"
+      $(".email").val "drewalex@gmail.com"
+
+      app.signInView.triggerEmailEntered()
+      onEmailEntered = () ->
+        eq $(".question").val(), "What_is_your_fav_color_",
+        "auto fill in quesiton"
+        #TODO
+        #write a test for focusing the answer
+        app.signInView.triggerCancelClick()
+        app.unbind "doneLookupQuestion", onEmailEntered
+        # delete the user I made
+        d()
+      app.bind "doneLookupQuestion", onEmailEntered
+        
+    
   test "server test", (d) ->
     server "json_test", (err, json) ->
       eq err, null, "should not get error from test json"
       eq json.a, 1
       eq json.band.name, "aterciopelados"
       d()
+
+  test "editing a listing", (d) ->
+    #TODO: write this test
+    d()
+    
 
 
   

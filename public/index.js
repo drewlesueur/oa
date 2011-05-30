@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, keys, liteAlert, log, parallel, series, server, wait;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, get, keys, liteAlert, log, parallel, series, server, serverMaker, wait;
 var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -19,27 +19,33 @@ log = function() {
   args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
   return console.log.apply(console, args);
 };
-server = function(method, callback) {
-  var args, data, _ref;
-  if (_.isArray(method)) {
-    _ref = method, method = _ref[0], args = _ref[1];
-  }
-  data = JSON.stringify(args || {});
-  return $.ajax({
-    url: "/" + method,
-    type: "POST",
-    contentType: 'application/json',
-    data: data,
-    dataType: 'json',
-    processData: false,
-    success: function(data) {
-      return callback(null, data);
-    },
-    error: function(data) {
-      return callback(data);
+serverMaker = function(httpMethod) {
+  var server;
+  return server = function(method, callback) {
+    var args, data, _ref;
+    httpMethod = null;
+    if (_.isArray(method)) {
+      _ref = method, method = _ref[0], args = _ref[1], httpMethod = _ref[2];
     }
-  });
+    data = JSON.stringify(args || {});
+    return $.ajax({
+      url: "/" + method,
+      type: httpMethod || "POST",
+      contentType: 'application/json',
+      data: data,
+      dataType: 'json',
+      processData: false,
+      success: function(data) {
+        return callback(null, data);
+      },
+      error: function(data) {
+        return callback(data);
+      }
+    });
+  };
 };
+server = serverMaker("POST");
+get = serverMaker("GET");
 liteAlert = function(message) {
   return console.log(message);
 };
@@ -535,7 +541,7 @@ OfficeListPresenter = (function() {
     }
     return server(["sessions", values], __bind(function(err, result) {
       if (err) {
-        alert("there was a problem logging in");
+        alert("The password is incorrect");
         this.signInView.clearPassword();
         return d(err);
       } else {
@@ -562,7 +568,22 @@ OfficeListPresenter = (function() {
       return d();
     }, this));
   };
+  OfficeListPresenter.prototype.handleEmailEntered = function(email, d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return get("questions/" + email + "/", __bind(function(err, res) {
+      if (err) {
+        return d();
+      }
+      this.signInView.setQuestion(res.question);
+      this.signInView.focusAnswer();
+      app.trigger("doneLookupQuestion");
+      return d();
+    }, this));
+  };
   function OfficeListPresenter() {
+    this.handleEmailEntered = __bind(this.handleEmailEntered, this);
     this.handleSignOut = __bind(this.handleSignOut, this);
     this.handleSignIn = __bind(this.handleSignIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
@@ -596,6 +617,7 @@ OfficeListPresenter = (function() {
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
     this.map.bind("signin", this.handleSignIn);
     this.map.bind("signout", this.handleSignOut);
+    this.map.bind("emailentered", this.handleEmailEntered);
     $('#map-wrapper').append(this.map.el);
     $('#map-wrapper').css({
       width: $(window).width() - 300 + "px",

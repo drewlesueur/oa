@@ -26,7 +26,7 @@ SignInView = (function() {
       }
       return _results;
     }).call(this);
-    return $("<div id=\"" + this.divId + "\">\n  <div class=\"top-bar\">\n    <div class=\"sign-in-wrapper\">\n      <a href=\"#\" class=\"sign-in\">Sign In</a> \n    </div>\n    <div class=\"signed-in\" style=\"display:none;\">\n      <span class=\"signed-in-as-text\">Signed in as</span>\n      <span class=\"signed-in-as\"></span>\n      <a href=\"#\" class=\"sign-out\" >Sign Out</a>\n    </div>\n  </div>\n  <div class=\"login-area\">\n    <div class=\"login\" style=\"display:none;\" class=\"login-pop-up\">\n      <div class=\"notes\">" + this.signInText + "</div> \n      <form>\n        <input type=\"text\" class=\"email\" placeholder=\"email\">\n        <br />\n        <select class=\"question\">\n          " + questions + "\n        </select>\n        <br/>\n        <input type=\"text\" class=\"password\" placeholder=\"ansswer\"/>\n        <br />\n        <input type=\"submit\" value=\"Sign In\"/>\n        <a href=\"#\" class=\"cancel-sign-in\">Cancel</a>\n      </form>\n    </div>\n  </div>\n</div>");
+    return $("<div id=\"" + this.divId + "\">\n  <div class=\"top-bar\">\n    <div class=\"sign-in-wrapper\">\n      <a href=\"#\" class=\"sign-in\">Sign In/Sign up</a> \n    </div>\n    <div class=\"signed-in\" style=\"display:none;\">\n      <span class=\"signed-in-as-text\">Signed in as</span>\n      <span class=\"signed-in-as\"></span>\n      <a href=\"#\" class=\"sign-out\" >Sign Out</a>\n    </div>\n  </div>\n  <div class=\"login-area\">\n    <div class=\"login\" style=\"display:none;\" class=\"login-pop-up\">\n      <div class=\"notes\">" + this.signInText + "</div> \n      <form>\n        <input type=\"text\" class=\"email\" placeholder=\"email\">\n        <br />\n        <select class=\"question\">\n          " + questions + "\n        </select>\n        <br/>\n        <input type=\"text\" class=\"password\" placeholder=\"ansswer\"/>\n        <br />\n        <input type=\"submit\" value=\"Sign In\"/>\n        <a href=\"#\" class=\"cancel-sign-in\">Cancel</a>\n      </form>\n    </div>\n  </div>\n</div>");
   };
   function SignInView(mainView) {
     this.triggerSignOutClick = __bind(this.triggerSignOutClick, this);
@@ -38,6 +38,9 @@ SignInView = (function() {
     this.showPopUp = __bind(this.showPopUp, this);
     this.hidePopUp = __bind(this.hidePopUp, this);
     this.triggerCancelClick = __bind(this.triggerCancelClick, this);
+    this.triggerEmailEntered = __bind(this.triggerEmailEntered, this);
+    this.focusAnswer = __bind(this.focusAnswer, this);
+    this.setQuestion = __bind(this.setQuestion, this);
     this.createEl = __bind(this.createEl, this);    SignInView.__super__.constructor.apply(this, arguments);
     this.el = this.createEl();
     this.el.find('cancel-sign-in').click(__bind(function(e) {
@@ -45,6 +48,9 @@ SignInView = (function() {
       return this.triggerCancelClick();
     }, this));
     this.SignInDiv = this.el.find('.login');
+    this.SignInDiv.find('.email').bind("change", __bind(function(e) {
+      return this.triggerEmailEntered();
+    }, this));
     this.SignInDiv.find('form').submit(__bind(function(e) {
       e.preventDefault();
       return this.submit();
@@ -60,6 +66,18 @@ SignInView = (function() {
       return this.triggerSignOutClick();
     }, this));
   }
+  SignInView.prototype.setQuestion = function(val) {
+    return this.el.find(".question").val(val);
+  };
+  SignInView.prototype.focusAnswer = function() {
+    return this.el.find(".password")[0].focus();
+  };
+  SignInView.prototype.triggerEmailEntered = function(d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return this.mainView.trigger("emailentered", this.el.find(".email").val(), d);
+  };
   SignInView.prototype.triggerCancelClick = function(done) {
     if (done == null) {
       done = function() {};

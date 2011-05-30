@@ -2,20 +2,24 @@ console ?=
   log: () ->
 log = (args...) ->
   console.log args...
-server = (method, callback) ->
-  if _.isArray method
-    [method, args] = method
-  #TODO: why does the {} work?
-  data = JSON.stringify args || {}
-  $.ajax 
-    url: "/#{method}"
-    type: "POST"
-    contentType: 'application/json'
-    data: data
-    dataType: 'json'
-    processData: false
-    success: (data) -> callback null, data
-    error: (data) -> callback data
+serverMaker = (httpMethod) ->
+  server = (method, callback) ->
+    httpMethod = null
+    if _.isArray method
+      [method, args, httpMethod] = method
+    #TODO: why does the {} work?
+    data = JSON.stringify args || {}
+    $.ajax 
+      url: "/#{method}"
+      type: httpMethod || "POST"
+      contentType: 'application/json'
+      data: data
+      dataType: 'json'
+      processData: false
+      success: (data) -> callback null, data
+      error: (data) -> callback data
+server = serverMaker "POST"
+get = serverMaker "GET"
 
 liteAlert = (message) ->
   console.log message
@@ -364,7 +368,7 @@ class OfficeListPresenter
   handleSignIn: (values, d=->) =>
     server ["sessions", values], (err, result) =>
       if err
-        alert "there was a problem logging in"
+        alert "The password is incorrect"
         @signInView.clearPassword()
         d err
       else
@@ -378,6 +382,13 @@ class OfficeListPresenter
       if err then return alert "there was a problem signing out"
       @signInView.hideSignedInAs()
       d()
+   handleEmailEntered: (email, d=->) =>
+     get "questions/#{email}/", (err, res) =>
+       if err then return d()
+       @signInView.setQuestion res.question
+       @signInView.focusAnswer()
+       app.trigger "doneLookupQuestion"
+       d()
 
 
       
@@ -411,6 +422,7 @@ class OfficeListPresenter
     @map.bind "mapcenterchanged", @handleMapCenterChanged
     @map.bind "signin", @handleSignIn
     @map.bind "signout", @handleSignOut
+    @map.bind "emailentered", @handleEmailEntered
     
 
     $('#map-wrapper').append @map.el
