@@ -7,21 +7,29 @@ var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(
   child.__super__ = parent.prototype;
   return child;
 };
+if (typeof console !== "undefined" && console !== null) {
+  console;
+} else {
+  console = {
+    log: function() {}
+  };
+};
 log = function() {
   var args;
   args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
   return console.log.apply(console, args);
 };
 server = function(method, callback) {
-  var args, _ref;
+  var args, data, _ref;
   if (_.isArray(method)) {
     _ref = method, method = _ref[0], args = _ref[1];
   }
+  data = JSON.stringify(args || {});
   return $.ajax({
     url: "/" + method,
     type: "POST",
     contentType: 'application/json',
-    data: JSON.stringify(args),
+    data: data,
     dataType: 'json',
     processData: false,
     success: function(data) {
@@ -434,14 +442,14 @@ OfficeListPresenter = (function() {
       this.map.clearFields();
       listing.save(null, {
         success: __bind(function() {
+          done();
           return liteAlert("saved");
         }, this),
         error: __bind(function(err) {
           return done(err);
         }, this)
       });
-      listing.view.handleMarkerClick();
-      return done();
+      return listing.view.handleMarkerClick();
     } else {
       return this.trigger("error", "no temporary listing");
     }
@@ -525,16 +533,21 @@ OfficeListPresenter = (function() {
     if (d == null) {
       d = function() {};
     }
-    log(values);
     return server(["sessions", values], __bind(function(err, result) {
-      return series([
-        this.signInView.hidePopUp, __bind(function(d) {
-          this.signInView.showSignedInAs(values.email);
+      if (err) {
+        alert("there was a problem logging in");
+        this.signInView.clearPassword();
+        return d(err);
+      } else {
+        return series([
+          this.signInView.hidePopUp, __bind(function(d) {
+            this.signInView.showSignedInAs(values.email);
+            return d();
+          }, this)
+        ], function(err) {
           return d();
-        }, this)
-      ], function(err) {
-        return d();
-      });
+        });
+      }
     }, this));
   };
   OfficeListPresenter.prototype.handleSignOut = function(d) {

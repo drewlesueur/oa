@@ -34,6 +34,7 @@ SignInView = (function() {
     this.submit = __bind(this.submit, this);
     this.hideSignedInAs = __bind(this.hideSignedInAs, this);
     this.showSignedInAs = __bind(this.showSignedInAs, this);
+    this.clearPassword = __bind(this.clearPassword, this);
     this.showPopUp = __bind(this.showPopUp, this);
     this.hidePopUp = __bind(this.hidePopUp, this);
     this.triggerCancelClick = __bind(this.triggerCancelClick, this);
@@ -83,14 +84,19 @@ SignInView = (function() {
       return d();
     }, this));
   };
+  SignInView.prototype.clearPassword = function() {
+    return this.el.find(".password").val("");
+  };
   SignInView.prototype.showSignedInAs = function(email) {
     this.el.find(".signed-in-as").text(email);
     this.el.find(".signed-in").css({
       display: "block"
     });
-    return this.el.find(".sign-in-wrapper").css({
+    this.el.find(".sign-in-wrapper").css({
       display: "none"
     });
+    this.el.find(".email").val("");
+    return this.el.find(".password").val("");
   };
   SignInView.prototype.hideSignedInAs = function() {
     this.el.find(".signed-in-as").text("");

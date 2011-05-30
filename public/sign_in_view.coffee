@@ -72,10 +72,14 @@ class SignInView extends Backbone.View
     @SignInDiv.show =>
       @visible = true
       d()
+  clearPassword: () =>
+    @el.find(".password").val ""
   showSignedInAs: (email) => 
     @el.find(".signed-in-as").text email  #for our time
     @el.find(".signed-in").css display:"block"
     @el.find(".sign-in-wrapper").css display:"none"
+    @el.find(".email").val ""
+    @el.find(".password").val ""
   hideSignedInAs: () =>
     @el.find(".signed-in-as").text ""
     @el.find(".signed-in").css display:"none"

@@ -4,6 +4,7 @@ _ = require "underscore"
 require("drews-mixins") _
 MySqlHelper = require("mysql-helper").MySqlHelper
 
+{wait} = _
 
 log = (args...) -> console.log args... 
 
@@ -79,7 +80,8 @@ app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
 
 app.post "/cleanUpTestDb", (req, res) ->
-  db.query "delete from listings where address = '1465 E. Halifax St, Mesa, AZ 85203'", (err) ->
+  db.query "delete from listings where id > 36" , (err) ->
+    console.log "you cleaned the db!!"
     if err then return res.send err
     res.send "success"
 
@@ -96,14 +98,21 @@ pg "/whoami", (req, res) ->
   
 
 app.post "/listings", (req, res) ->
+  console.log "you tried to post a listing!"
+  console.log req.body
   db.insert "listings", req.body, (err) ->
-    if err then return res.send err.message
-    res.send {'yay': 1}
+    if err
+      console.log "there was an error"  
+      return res.send err.message
+    else
+      res.send {'yay': 1}
     
 app.get "/listings", (req, res) ->
   db.query "select * from listings", (err, results) ->
    if err then return res.send {}, 500
-   res.send results
+   res.send results,
+     "Cache-Control": "no-cache, must-revalidate"
+     "Expires": "Sat, 26 Jul 1997 05:00:00 GMT"
   
 userExists = (email, cb=->) ->
   db.query "select * from users where email = ?",
@@ -118,6 +127,15 @@ pg "/signout", (req, res) ->
   delete req.session.email
   res.send you: "did it"
 
+pg "/json_test", (req, res) ->
+  res.send
+    a: 1
+    b: 2
+    band:
+      name: "aterciopelados"
+      albums: ["rio", "oye", "gozo poderoso"]
+      members: ["hector buitrago", "andrea echeverri"]
+
 app.post "/sessions", (req, res) ->
   userExists req.body.email, (err, result) ->
     if result is true
@@ -125,7 +143,7 @@ app.post "/sessions", (req, res) ->
         [req.body.email, req.body.question, req.body.password],
         (err, results) ->
           if results.length is 0
-            res.send {error: "wrong combo"}, 500
+            res.send {error: "wrong combo"}, 401
           else
             req.session.email = req.body.email
             res.send {} #200 ok

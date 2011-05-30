@@ -1,13 +1,17 @@
+console ?=
+  log: () ->
 log = (args...) ->
   console.log args...
 server = (method, callback) ->
   if _.isArray method
     [method, args] = method
+  #TODO: why does the {} work?
+  data = JSON.stringify args || {}
   $.ajax 
     url: "/#{method}"
     type: "POST"
     contentType: 'application/json'
-    data: JSON.stringify args
+    data: data
     dataType: 'json'
     processData: false
     success: (data) -> callback null, data
@@ -309,10 +313,10 @@ class OfficeListPresenter
       @map.clearFields()
       listing.save null,
         success: () => 
+          done()
           liteAlert "saved"
         error: (err) => done err 
       listing.view.handleMarkerClick()
-      done()
     else
       @trigger "error", "no temporary listing"
   addTmpListing: (listing, callback) =>
@@ -358,14 +362,18 @@ class OfficeListPresenter
     if @tempListing
       @tempListing.view.removeVideo()
   handleSignIn: (values, d=->) =>
-    log values
     server ["sessions", values], (err, result) =>
-      series [
-        @signInView.hidePopUp
-        (d) => @signInView.showSignedInAs values.email;d()
-      ], (err) -> d()
-      # sucedio 
+      if err
+        alert "there was a problem logging in"
+        @signInView.clearPassword()
+        d err
+      else
+        series [ @signInView.hidePopUp
+          (d) => @signInView.showSignedInAs values.email;d()
+        ], (err) -> d()
+        # sucedio 
   handleSignOut: (d=->) =>
+    #TODO: make this more restful
     server "signout", (err, result) =>
       if err then return alert "there was a problem signing out"
       @signInView.hideSignedInAs()
