@@ -27,7 +27,7 @@ liteAlert = (message) ->
 class YoutubeParser
   exampleEmbed: '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>'
   createIframe: () ->
-    """<iframe width="#{@width}" height="#{@height}" src="http://www.youtube.com/embed/#{@id}?autoplay=1"></iframe>"""
+    """<iframe class="video-iframe" width="#{@width}" height="#{@height}" src="http://www.youtube.com/embed/#{@id}?autoplay=1"></iframe>"""
   constructor: (youtubeEmbed) ->
     @embed = youtubeEmbed
     matches = null
@@ -106,6 +106,8 @@ class GoogleMap extends Backbone.View
 
     google.maps.event.addListener @map, "center_changed", (args...) =>
       @triggerMapCenterChanged args...
+  setLatLng:  (lat, lng) =>
+    @map.setCenter new google.maps.LatLng lat, lng
   triggerMapCenterChanged: (args...) =>
     @trigger "mapcenterchanged"
   
@@ -196,7 +198,7 @@ class ListingView extends Backbone.View
 
   removeVideo: (cb=->) =>
     #TODO maybe a class or id on the iframe.. or wrap it
-    $('iframe').remove()
+    $('iframe.video-iframe').remove()
   swapImageWithVideo: (cb=->) =>
     iframe = $ @model.youtubeParser.embed
     img = @getBubbleDiv().find('img')
@@ -283,9 +285,9 @@ class OfficeListController extends Backbone.Controller
     "test": "test"
     "tests/:test": "tests"
   tests: (test) =>
-    runTest test
+    officeTest.runTestWhenReady test
   test: () =>
-    runTests() 
+    officeTest.runTestsWhenReady()
 
     
 
@@ -324,6 +326,7 @@ class OfficeListPresenter
     else
       @trigger "error", "no temporary listing"
   addTmpListing: (listing, callback) =>
+    
     callback ||= ->
     if listing.constructor isnt Listing
       listing = new Listing listing
@@ -368,7 +371,7 @@ class OfficeListPresenter
   handleSignIn: (values, d=->) =>
     server ["sessions", values], (err, result) =>
       if err
-        alert "The password is incorrect"
+        liteAlert "The password is incorrect"
         @signInView.clearPassword()
         d err
       else
@@ -382,18 +385,13 @@ class OfficeListPresenter
       if err then return alert "there was a problem signing out"
       @signInView.hideSignedInAs()
       d()
-   handleEmailEntered: (email, d=->) =>
-     get "questions/#{email}/", (err, res) =>
-       if err then return d()
-       @signInView.setQuestion res.question
-       @signInView.focusAnswer()
-       app.trigger "doneLookupQuestion"
-       d()
-
-
-      
-      
-    
+  handleEmailEntered: (email, d=->) =>
+    get "questions/#{email}/", (err, res) =>
+      if err then return d()
+      @signInView.setQuestion res.question
+      @signInView.focusAnswer()
+      app.trigger "doneLookupQuestion"
+      d()
 
   constructor: () ->
     _.extend @, Backbone.Events
@@ -438,6 +436,7 @@ class OfficeListPresenter
       $('#lat').val lat
       $('#lng').val lng
       latLng = new google.maps.LatLng(lat, lng)
+      @yourPosition = latLng
       @map.map.setCenter(latLng)
   
     navigator.geolocation?.getCurrentPosition?(onLoc)

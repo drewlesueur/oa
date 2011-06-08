@@ -1,4 +1,4 @@
-var func, monkeyPatch, name, runTest, runTests, toMonkeyPatch;
+var func, monkeyPatch, name, officeTest, toMonkeyPatch;
 var __slice = Array.prototype.slice;
 _.assertClose = function(val, otherVal, within, message) {
   if (Math.abs(otherVal - val) <= within) {
@@ -41,11 +41,10 @@ for (name in toMonkeyPatch) {
   monkeyPatch(Number.prototype, name, func);
   monkeyPatch(String.prototype, name, func);
 }
-runTest = null;
-runTests = null;
-(function() {
-  var addTmpListing, cleanDb, e, eq, getTestLink, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, parallel, preRun, s, savingAListing, see, series, test, testKeys, tests, testsComplete, wait, waitForYoutube, _i, _len;
-  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s;
+officeTest = (function() {
+  var addTmpListing, bind, cleanDb, createUser, doneMaker, e, eq, getTestLink, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, onHaveAllCards, parallel, preRun, runTest, runTestWhenReady, runTests, runTestsWhenReady, s, savingAListing, see, self, series, takeCard, test, testKeys, tests, testsComplete, trigger, wait, waitForYoutube, _i, _len, _ref;
+  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s, doneMaker = _.doneMaker, bind = _.addListener, trigger = _.trigger;
+  _ref = doneMaker(), takeCard = _ref[0], onHaveAllCards = _ref[1];
   tests = {};
   test = function(title, func) {
     return tests[title] = func;
@@ -242,8 +241,7 @@ runTests = null;
     }, function() {
       return _.wait(waitForYoutube, function() {
         return app.tempListing.view.triggerYoutubeImageClick(function() {
-          _.assertEqual($('iframe').length, 1);
-          "should have iframe youtube video";
+          _.assertEqual($('iframe.video-iframe').length, 1, "should have iframe youtube video");
           return done();
         });
       });
@@ -253,10 +251,10 @@ runTests = null;
     return addTmpListing(function(err, listing) {
       return _.wait(waitForYoutube, function() {
         return listing.view.triggerYoutubeImageClick(function() {
-          _.assertEqual($('iframe').length, 1, "wax on");
+          _.assertEqual($('iframe.video-iframe').length, 1, "wax on");
           return _.wait(1000, function() {
             app.map.triggerMapCenterChanged();
-            _.assertEqual($('iframe').length, 0, "wax off");
+            _.assertEqual($('iframe.video-iframe').length, 0, "wax off");
             return done();
           });
         });
@@ -269,7 +267,7 @@ runTests = null;
         return listing.view.triggerYoutubeImageClick(function() {
           return _.wait(1000, function() {
             listing.view.handleBubbleClose();
-            _.assertEqual($('iframe').length, 0, "wax off");
+            _.assertEqual($('iframe.video-iframe').length, 0, "wax off");
             return done();
           });
         });
@@ -409,9 +407,25 @@ runTests = null;
       return d();
     });
   });
-  test("editing a listing", function(d) {
-    return d();
-  });
+  createUser = function(done) {
+    var user;
+    user = {
+      email: "drewalex@gmail.com",
+      question: "What_is_your_fav_color_",
+      password: "blue"
+    };
+    return server(["sessions", user], done);
+  };
+  (function() {
+    var returnCard;
+    returnCard = takeCard();
+    test("editing a listing", function(d) {
+      return d();
+    });
+    return wait(200, function() {
+      return returnCard();
+    });
+  })();
   testKeys = keys(tests).reverse();
   log(testKeys);
   newTests = {};
@@ -446,11 +460,41 @@ runTests = null;
   getTestLink = function(test) {
     return "#tests/" + (test.replace(/\s/g, '_'));
   };
-  $(document).ready(function() {
+  self = {
+    testsReady: false
+  };
+  (function() {
+    var returnCard;
+    returnCard = takeCard();
+    return $(function() {
+      return returnCard();
+    });
+  })();
+  onHaveAllCards(function() {
+    self.testsReady = true;
+    trigger(self, "testsready");
     return _.each(tests, function(val, key) {
       return $('#tests').append($("<div><a href='" + (getTestLink(key)) + "'>" + key + "</div>"));
     });
   });
+  runTestWhenReady = function(test) {
+    if (self.testsReady) {
+      return runTest(test);
+    } else {
+      return bind(self, "testsready", function() {
+        return runTest(test);
+      });
+    }
+  };
+  runTestsWhenReady = function() {
+    if (self.testsReady) {
+      return runTests();
+    } else {
+      return bind(self, "testsready", function() {
+        return runTests();
+      });
+    }
+  };
   preRun = function() {
     app.bind("error", function(err) {
       return console.log("ERROR! " + err);
@@ -465,7 +509,7 @@ runTests = null;
       return _.series([tests[testName]], testsComplete);
     });
   };
-  return runTests = function() {
+  runTests = function() {
     return _.wait(1000, function() {
       preRun();
       newTests = {};
@@ -478,4 +522,9 @@ runTests = null;
       return _.series(newTests, testsComplete);
     });
   };
+  self.runTest = runTest;
+  self.runTestWhenReady = runTestWhenReady;
+  self.runTests = runTests;
+  self.runTestsWhenReady = runTestsWhenReady;
+  return self;
 })();

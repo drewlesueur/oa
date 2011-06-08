@@ -52,7 +52,7 @@ liteAlert = function(message) {
 YoutubeParser = (function() {
   YoutubeParser.prototype.exampleEmbed = '<iframe width="425" height="349" src="http://www.youtube.com/embed/H1G2YnKanWs" frameborder="0" allowfullscreen></iframe>';
   YoutubeParser.prototype.createIframe = function() {
-    return "<iframe width=\"" + this.width + "\" height=\"" + this.height + "\" src=\"http://www.youtube.com/embed/" + this.id + "?autoplay=1\"></iframe>";
+    return "<iframe class=\"video-iframe\" width=\"" + this.width + "\" height=\"" + this.height + "\" src=\"http://www.youtube.com/embed/" + this.id + "?autoplay=1\"></iframe>";
   };
   function YoutubeParser(youtubeEmbed) {
     this.getBigImage = __bind(this.getBigImage, this);
@@ -123,7 +123,8 @@ GoogleMap = (function() {
     this.triggerAddressChange = __bind(this.triggerAddressChange, this);
     this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);
     this.triggerReload = __bind(this.triggerReload, this);
-    this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);    this.el = $(this.make("div"));
+    this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);
+    this.setLatLng = __bind(this.setLatLng, this);    this.el = $(this.make("div"));
     this.el.css({
       width: $(window).width() - 300 + "px",
       height: $(window).height() + "px"
@@ -153,6 +154,9 @@ GoogleMap = (function() {
       return this.triggerMapCenterChanged.apply(this, args);
     }, this));
   }
+  GoogleMap.prototype.setLatLng = function(lat, lng) {
+    return this.map.setCenter(new google.maps.LatLng(lat, lng));
+  };
   GoogleMap.prototype.triggerMapCenterChanged = function() {
     var args;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -307,7 +311,7 @@ ListingView = (function() {
     if (cb == null) {
       cb = function() {};
     }
-    return $('iframe').remove();
+    return $('iframe.video-iframe').remove();
   };
   ListingView.prototype.swapImageWithVideo = function(cb) {
     var iframe, img;
@@ -393,10 +397,10 @@ OfficeListController = (function() {
     "tests/:test": "tests"
   };
   OfficeListController.prototype.tests = function(test) {
-    return runTest(test);
+    return officeTest.runTestWhenReady(test);
   };
   OfficeListController.prototype.test = function() {
-    return runTests();
+    return officeTest.runTestsWhenReady();
   };
   return OfficeListController;
 })();
@@ -541,7 +545,7 @@ OfficeListPresenter = (function() {
     }
     return server(["sessions", values], __bind(function(err, result) {
       if (err) {
-        alert("The password is incorrect");
+        liteAlert("The password is incorrect");
         this.signInView.clearPassword();
         return d(err);
       } else {
@@ -630,6 +634,7 @@ OfficeListPresenter = (function() {
       $('#lat').val(lat);
       $('#lng').val(lng);
       latLng = new google.maps.LatLng(lat, lng);
+      this.yourPosition = latLng;
       return this.map.map.setCenter(latLng);
     }, this);
     if ((_ref = navigator.geolocation) != null) {

@@ -18,7 +18,7 @@ _.assertNoSee = (text, message) ->
   else
     _.assertPass text, "[html body]", message, "see", _.assertSee 
 
-
+# todo get rid of this experimental monkey patching
 # This could be bad, experimenting with extending native javascript objects
 # / Monkeypatching javascript
 
@@ -41,9 +41,7 @@ for name, func of toMonkeyPatch
 #for name, func of _
 #  window[name] = func
 
-runTest = null
-runTests = null
-do () ->
+officeTest = do () ->
   # some coffeescript destructuring assignments
   {
     assertSee: see
@@ -58,8 +56,13 @@ do () ->
     keys: keys
     isEqual: isEqual
     s:s
+    doneMaker: doneMaker
+    addListener: bind
+    trigger: trigger
+
   } = _
   
+  [takeCard, onHaveAllCards] = doneMaker()
   
   tests = {}
 
@@ -262,7 +265,7 @@ do () ->
     , () ->
       _.wait waitForYoutube, () ->
         app.tempListing.view.triggerYoutubeImageClick () ->
-          _.assertEqual $('iframe').length, 1
+          _.assertEqual $('iframe.video-iframe').length, 1,
           "should have iframe youtube video"
           done()
       
@@ -270,10 +273,10 @@ do () ->
     addTmpListing (err, listing) ->
       _.wait waitForYoutube, -> 
         listing.view.triggerYoutubeImageClick () ->
-          _.assertEqual $('iframe').length, 1, "wax on"
+          _.assertEqual $('iframe.video-iframe').length, 1, "wax on"
           _.wait 1000, () ->
             app.map.triggerMapCenterChanged()
-            _.assertEqual $('iframe').length, 0, "wax off"
+            _.assertEqual $('iframe.video-iframe').length, 0, "wax off"
             done()
 
       
@@ -284,7 +287,7 @@ do () ->
           _.wait 1000, () ->
             #TODO should this be trigger?
             listing.view.handleBubbleClose()
-            _.assertEqual $('iframe').length, 0, "wax off"
+            _.assertEqual $('iframe.video-iframe').length, 0, "wax off"
             done()
 
   test "there should be a big play button", (done) ->
@@ -450,9 +453,20 @@ do () ->
       eq json.band.name, "aterciopelados"
       d()
 
-  test "editing a listing", (d) ->
-    #TODO: write this test
-    d()
+  createUser = (done) ->
+    user = 
+      email: "drewalex@gmail.com" 
+      question: "What_is_your_fav_color_"
+      password: "blue"
+    server ["sessions", user], done
+
+
+  do () ->   
+    returnCard = takeCard()
+    test "editing a listing", (d) ->
+      #TODO: write this test
+      d()
+    wait 200, -> returnCard()
     
 
 
@@ -498,10 +512,38 @@ do () ->
 
   getTestLink = (test) ->
     "#tests/#{test.replace(/\s/g, '_')}"
-    
-  $(document).ready () ->
+  self = testsReady: false  
+
+  do ->
+    # wait for document.ready
+    returnCard = takeCard()
+    $ -> returnCard()
+
+
+  onHaveAllCards () ->
+    self.testsReady = true
+    trigger self, "testsready"
+    #alert "have all cards"
     _.each tests, (val, key) ->
       $('#tests').append $ "<div><a href='#{getTestLink(key)}'>#{key}</div>"
+
+  runTestWhenReady = (test) ->
+    if self.testsReady
+      runTest test 
+    else
+      bind self, "testsready", ->  runTest test
+  
+  # bindAnyTime or asLongAs
+  runTestsWhenReady = ->
+    if self.testsReady
+      runTests()
+    else
+      bind self, "testsready", ->
+        runTests()
+
+
+    
+    
 
   preRun = () ->
     app.bind "error", (err) ->
@@ -525,3 +567,8 @@ do () ->
           console.log key + " http://office.the.tl/#{getTestLink(key)}"
           test(done)
       _.series newTests, testsComplete
+  self.runTest = runTest
+  self.runTestWhenReady = runTestWhenReady
+  self.runTests = runTests
+  self.runTestsWhenReady = runTestsWhenReady
+  self
