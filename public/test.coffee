@@ -59,7 +59,9 @@ officeTest = do () ->
     doneMaker: doneMaker
     addListener: bind
     trigger: trigger
-
+    map: map
+    indexOf: indexOf
+    clone: clone
   } = _
   
   [takeCard, onHaveAllCards] = doneMaker()
@@ -111,38 +113,25 @@ officeTest = do () ->
       _.assertSee "These notes are my own", "see the notes of a listing"
       #TODO change this to triggerSubmit ...
       app.handleSubmit () ->
-        _.assertEqual $('#notes').val(), "",
-        "Notes field should be empty"
-        _.assertEqual $('#lat').val(), "",
-        "Notes field should be empty"
-        _.assertEqual $('#lng').val(), "",
-        "Notes field should be empty"
-        latlng = map.getCenter()
-        _.assertClose latlng.lat(), 33.44187, .01
-        "Latitude should change when adding a listing"
+        eq $('#notes').val(), "", "Notes field should be empty"
+        eq $('#lat').val(), "", "Notes field should be empty"
+        eq $('#lng').val(), "", "Notes field should be empty"
+        latlng = app.map.getCenter()
+        eq latlng.lat(), 33.44187, .01, "Latitude should change when adding a listing"
+        eq latlng.lng(), -111.798698, 0.1, "Longitutde should change when adding a listing"
+        eq app.map.getZoom(), 13, "Should zoom in when adding a listing"
+        newListings = listingModels.filter (listing) -> listing.get('notes') == "These notes are my own"
+        eq newListings.length, 1, "New listing should be added"
 
-        _.assertClose latlng.lng(), -111.798698, 0.1
-        "Longitutde should change when adding a listing"
-
-        _.assertEqual map.getZoom(), 13, 
-        "Should zoom in when adding a listing"
-        
-        
-        newListings = listingModels.filter (listing) ->
-          return listing.get('notes') == "These notes are my own"
-
-        _.assertEqual newListings.length, 1, 
-        "New listing should be added"
-
-        oldListings = _.map _.clone(app.listings.models), (model) -> model.attributes.address
+        oldListings = map (clone app.listings.models), (model) -> model.attributes.address
         app.map.triggerReload () ->
-          newListings = _.map app.listings.models, (model) -> model.attributes.address
+          newListings = map app.listings.models, (model) -> model.attributes.address
           log "old and new listings"
           log oldListings
           log newListings
           eq isEqual(oldListings, newListings), 1,
           "Listings should be reloaded"
-          _.assertNoSee "Reloading"
+          noSee "Reloading"
           done()
         _.assertSee "Reloading"
 
@@ -160,7 +149,7 @@ officeTest = do () ->
     $('#address').val "250 s. arizona ave, chandler, az"
     $("#notes").val "gangplankizzle"
     app.map.triggerAddressChange () ->
-      latlng = map.getCenter()
+      latlng = app.map.getCenter()
       _.assertClose latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank"
       _.assertClose latlng.lng(), -111.841, 0.001, "auto lookup lng for ganglplank"
       _.assertSee "gangplankizzle", "the notes should auto pop up"
@@ -171,7 +160,7 @@ officeTest = do () ->
 
       oldNewListings = _.filter listingModels, (model) -> not model.id
       _.wait waitForYoutube , () ->
-        latlng = map.getCenter()
+        latlng = app.map.getCenter()
         _.assertClose latlng.lat(), 33.361, 0.05, "auto lookup for egypt lat"
         _.assertClose latlng.lng(), -111.841, 0.05, "auto lookup for egypt lng"
         newNewListings = _.filter listingModels, (model) -> not model.id
@@ -231,8 +220,6 @@ officeTest = do () ->
     _.assertEqual t.getLittleImage(3), null
     done()
       
-  test "add listing using app.addListing", (done) ->
-    done()
 
   test "should be able to add youtube video", (done) ->
     listing = app.addTmpListing
@@ -361,7 +348,6 @@ officeTest = do () ->
 
     logInTests = (d) ->
       ok app.signInView.visible == false, "no see popup"
-      log app.signInView.el.find(".signed-in-as")
       ok app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1,
          "should see signed in as"
       ok app.signInView.el.find(".sign-out").is(":visible"),
@@ -453,20 +439,36 @@ officeTest = do () ->
       eq json.band.name, "aterciopelados"
       d()
 
-  createUser = (done) ->
-    user = 
+
+  test "add listing using app.addListing", (done) ->
+    # a simple test for add listing
+    # ui tests are elsewhere
+    #TODO: this thest assumes a lot
+    rawListing = address: "maricopa, az", notes: "maricopa notes", youtube: "http://www.youtube.com/watch?v=S6L9wccThyA"
+    app.addListing rawListing, (err, listing) ->
+      ok !err, "no error while calling add lisging"
+      get "listings", (err, listings) ->
+        notes = map listings, (listing) -> listing.notes
+        ok indexOf(notes, "maricopa notes") != -1, "notes should appear in the add listing"
+        done()
+
+  do () ->   
+    return
+    returnCard = takeCard()
+    rawListing = address: "maricopa, az", notes: "maricopa notes", youtube: "http://www.youtube.com/watch?v=S6L9wccThyA"
+    rawUser = 
       email: "drewalex@gmail.com" 
       question: "What_is_your_fav_color_"
       password: "blue"
-    server ["sessions", user], done
+    series [
+        -> app.signIn rawUser
+        -> app.addListing rawListing
+    ], (err, results) ->
 
-
-  do () ->   
-    returnCard = takeCard()
-    test "editing a listing", (d) ->
-      #TODO: write this test
-      d()
-    wait 200, -> returnCard()
+      test "editing a listing", (d) ->
+        #TODO: write this test
+        d()
+      returnCard()
     
 
 
@@ -482,7 +484,6 @@ officeTest = do () ->
   tests = newTests
   
   listingModels = null
-  map = null
 
 
   testsComplete = (err, results) -> 
@@ -549,7 +550,6 @@ officeTest = do () ->
     app.bind "error", (err) ->
       console.log "ERROR! #{err}"
     listingModels = app.listings.models
-    map = app.map.map
 
 
   runTest = (testName) ->

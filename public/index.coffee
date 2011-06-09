@@ -4,7 +4,6 @@ log = (args...) ->
   console.log args...
 serverMaker = (httpMethod) ->
   server = (method, callback) ->
-    httpMethod = null
     if _.isArray method
       [method, args, httpMethod] = method
     #TODO: why does the {} work?
@@ -81,9 +80,11 @@ _.each ['s'], (method) ->
   parallel: parallel
   wait: wait
   keys: keys
+  map: map
 } = _
 
 #this class is really the main view    
+#TODO: change name to officepresenterview
 class GoogleMap extends Backbone.View
   constructor: (width, height) ->
     @el = $ @make "div"
@@ -106,6 +107,8 @@ class GoogleMap extends Backbone.View
 
     google.maps.event.addListener @map, "center_changed", (args...) =>
       @triggerMapCenterChanged args...
+  getCenter: -> @map.getCenter()
+  getZoom: -> @map.getZoom()
   setLatLng:  (lat, lng) =>
     @map.setCenter new google.maps.LatLng lat, lng
   triggerMapCenterChanged: (args...) =>
@@ -126,7 +129,7 @@ class GoogleMap extends Backbone.View
     $("#address, #notes, #lat, #lng").val ""
   triggerNotesChange: () =>
     @trigger "noteschange", $('#notes').val()
-  addListing: (listing) =>
+  addListing: (listing, d=->) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')
     marker = new google.maps.Marker
       animation: google.maps.Animation.DROP
@@ -310,9 +313,17 @@ class OfficeListPresenter
         @map.hideReloading()
         cb()
     @map.displayReloading()
-  handleSubmit: (done) => @addListing(@tempListing, done)
-  addListing: (listing, done=->) => 
-    listing ||= @tempListing
+  addListing: (listing, done=->) =>
+    series [
+      (d) => @addTmpListing listing, -> d() #there prob is an easy way to to this pattern
+      @addListingFromTemp 
+    ], done
+    
+    
+  handleSubmit: (done) => @addListingFromTemp(done)
+  addListingFromTemp: (done=->) => 
+    listing = @tempListing
+    listing = @makeListingObj listing #this call may not be needed
     if listing
       if not listing.collection
         @listings.add listing
@@ -325,12 +336,15 @@ class OfficeListPresenter
       listing.view.handleMarkerClick()
     else
       @trigger "error", "no temporary listing"
-  addTmpListing: (listing, callback) =>
-    
-    callback ||= ->
+  makeListingObj: (listing) =>
     if listing.constructor isnt Listing
       listing = new Listing listing
       listing.view = new ListingView model: listing
+    listing
+
+  addTmpListing: (listing, callback) =>
+    callback ||= ->
+    listing = @makeListingObj listing
     listing.bind "remove", (model, collection) =>
       @map.removeListing model
     listing.bind "change:notes", () => 
@@ -368,8 +382,10 @@ class OfficeListPresenter
   handleMapCenterChanged: (cb=->) =>
     if @tempListing
       @tempListing.view.removeVideo()
+  signIn: (userInfo, d=->) =>
+    server ["sessions", userInfo], d
   handleSignIn: (values, d=->) =>
-    server ["sessions", values], (err, result) =>
+    @signIn values, (err, result) =>
       if err
         liteAlert "The password is incorrect"
         @signInView.clearPassword()

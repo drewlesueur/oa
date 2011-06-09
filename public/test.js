@@ -42,8 +42,8 @@ for (name in toMonkeyPatch) {
   monkeyPatch(String.prototype, name, func);
 }
 officeTest = (function() {
-  var addTmpListing, bind, cleanDb, createUser, doneMaker, e, eq, getTestLink, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, onHaveAllCards, parallel, preRun, runTest, runTestWhenReady, runTests, runTestsWhenReady, s, savingAListing, see, self, series, takeCard, test, testKeys, tests, testsComplete, trigger, wait, waitForYoutube, _i, _len, _ref;
-  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s, doneMaker = _.doneMaker, bind = _.addListener, trigger = _.trigger;
+  var addTmpListing, bind, cleanDb, clone, doneMaker, e, eq, getTestLink, indexOf, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, onHaveAllCards, parallel, preRun, runTest, runTestWhenReady, runTests, runTestsWhenReady, s, savingAListing, see, self, series, takeCard, test, testKeys, tests, testsComplete, trigger, wait, waitForYoutube, _i, _len, _ref;
+  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s, doneMaker = _.doneMaker, bind = _.addListener, trigger = _.trigger, map = _.map, indexOf = _.indexOf, clone = _.clone;
   _ref = doneMaker(), takeCard = _ref[0], onHaveAllCards = _ref[1];
   tests = {};
   test = function(title, func) {
@@ -84,31 +84,29 @@ officeTest = (function() {
       _.assertSee("These notes are my own", "see the notes of a listing");
       return app.handleSubmit(function() {
         var latlng, newListings, oldListings;
-        _.assertEqual($('#notes').val(), "", "Notes field should be empty");
-        _.assertEqual($('#lat').val(), "", "Notes field should be empty");
-        _.assertEqual($('#lng').val(), "", "Notes field should be empty");
-        latlng = map.getCenter();
-        _.assertClose(latlng.lat(), 33.44187, .01);
-        "Latitude should change when adding a listing";
-        _.assertClose(latlng.lng(), -111.798698, 0.1);
-        "Longitutde should change when adding a listing";
-        _.assertEqual(map.getZoom(), 13, "Should zoom in when adding a listing");
+        eq($('#notes').val(), "", "Notes field should be empty");
+        eq($('#lat').val(), "", "Notes field should be empty");
+        eq($('#lng').val(), "", "Notes field should be empty");
+        latlng = app.map.getCenter();
+        eq(latlng.lat(), 33.44187, .01, "Latitude should change when adding a listing");
+        eq(latlng.lng(), -111.798698, 0.1, "Longitutde should change when adding a listing");
+        eq(app.map.getZoom(), 13, "Should zoom in when adding a listing");
         newListings = listingModels.filter(function(listing) {
           return listing.get('notes') === "These notes are my own";
         });
-        _.assertEqual(newListings.length, 1, "New listing should be added");
-        oldListings = _.map(_.clone(app.listings.models), function(model) {
+        eq(newListings.length, 1, "New listing should be added");
+        oldListings = map(clone(app.listings.models), function(model) {
           return model.attributes.address;
         });
         app.map.triggerReload(function() {
-          newListings = _.map(app.listings.models, function(model) {
+          newListings = map(app.listings.models, function(model) {
             return model.attributes.address;
           });
           log("old and new listings");
           log(oldListings);
           log(newListings);
           eq(isEqual(oldListings, newListings), 1, "Listings should be reloaded");
-          _.assertNoSee("Reloading");
+          noSee("Reloading");
           return done();
         });
         return _.assertSee("Reloading");
@@ -130,7 +128,7 @@ officeTest = (function() {
     $("#notes").val("gangplankizzle");
     return app.map.triggerAddressChange(function() {
       var latlng, oldNewListings;
-      latlng = map.getCenter();
+      latlng = app.map.getCenter();
       _.assertClose(latlng.lat(), 33.300, 0.001, "auto lookup lat for Gangplank");
       _.assertClose(latlng.lng(), -111.841, 0.001, "auto lookup lng for ganglplank");
       _.assertSee("gangplankizzle", "the notes should auto pop up");
@@ -142,7 +140,7 @@ officeTest = (function() {
       });
       return _.wait(waitForYoutube, function() {
         var newNewListings;
-        latlng = map.getCenter();
+        latlng = app.map.getCenter();
         _.assertClose(latlng.lat(), 33.361, 0.05, "auto lookup for egypt lat");
         _.assertClose(latlng.lng(), -111.841, 0.05, "auto lookup for egypt lng");
         newNewListings = _.filter(listingModels, function(model) {
@@ -199,9 +197,6 @@ officeTest = (function() {
     _.assertEqual(t.getLittleImage(1), null);
     _.assertEqual(t.getLittleImage(2), null);
     _.assertEqual(t.getLittleImage(3), null);
-    return done();
-  });
-  test("add listing using app.addListing", function(done) {
     return done();
   });
   test("should be able to add youtube video", function(done) {
@@ -346,7 +341,6 @@ officeTest = (function() {
     };
     logInTests = function(d) {
       ok(app.signInView.visible === false, "no see popup");
-      log(app.signInView.el.find(".signed-in-as"));
       ok(app.signInView.el.find(".signed-in-as:contains('drew')").length >= 1, "should see signed in as");
       ok(app.signInView.el.find(".sign-out").is(":visible"), "should see sign out");
       ok(app.signInView.el.find(".email").val() === "", "email is empty");
@@ -407,22 +401,49 @@ officeTest = (function() {
       return d();
     });
   });
-  createUser = function(done) {
-    var user;
-    user = {
+  test("add listing using app.addListing", function(done) {
+    var rawListing;
+    rawListing = {
+      address: "maricopa, az",
+      notes: "maricopa notes",
+      youtube: "http://www.youtube.com/watch?v=S6L9wccThyA"
+    };
+    return app.addListing(rawListing, function(err, listing) {
+      ok(!err, "no error while calling add lisging");
+      return get("listings", function(err, listings) {
+        var notes;
+        notes = map(listings, function(listing) {
+          return listing.notes;
+        });
+        ok(indexOf(notes, "maricopa notes") !== -1, "notes should appear in the add listing");
+        return done();
+      });
+    });
+  });
+  (function() {
+    var rawListing, rawUser, returnCard;
+    return;
+    returnCard = takeCard();
+    rawListing = {
+      address: "maricopa, az",
+      notes: "maricopa notes",
+      youtube: "http://www.youtube.com/watch?v=S6L9wccThyA"
+    };
+    rawUser = {
       email: "drewalex@gmail.com",
       question: "What_is_your_fav_color_",
       password: "blue"
     };
-    return server(["sessions", user], done);
-  };
-  (function() {
-    var returnCard;
-    returnCard = takeCard();
-    test("editing a listing", function(d) {
-      return d();
-    });
-    return wait(200, function() {
+    return series([
+      function() {
+        return app.signIn(rawUser);
+      }, function() {
+        return app.addListing(rawListing);
+      }
+    ], function(err, results) {
+      test("editing a listing", function(d) {
+        return d();
+      });
       return returnCard();
     });
   })();
@@ -435,7 +456,6 @@ officeTest = (function() {
   }
   tests = newTests;
   listingModels = null;
-  map = null;
   testsComplete = function(err, results) {
     var failedMessages, failures, message, _j, _len2;
     server("cleanUpTestDb", function(err, result) {
@@ -499,8 +519,7 @@ officeTest = (function() {
     app.bind("error", function(err) {
       return console.log("ERROR! " + err);
     });
-    listingModels = app.listings.models;
-    return map = app.map.map;
+    return listingModels = app.listings.models;
   };
   runTest = function(testName) {
     testName = testName.replace(/_/g, " ");

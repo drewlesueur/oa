@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, get, keys, liteAlert, log, parallel, series, server, serverMaker, wait;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, get, keys, liteAlert, log, map, parallel, series, server, serverMaker, wait;
 var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -23,7 +23,6 @@ serverMaker = function(httpMethod) {
   var server;
   return server = function(method, callback) {
     var args, data, _ref;
-    httpMethod = null;
     if (_.isArray(method)) {
       _ref = method, method = _ref[0], args = _ref[1], httpMethod = _ref[2];
     }
@@ -106,7 +105,7 @@ _.each(['s'], function(method) {
     return _[method].apply(_, [this.models].concat(_.toArray(arguments)));
   };
 });
-series = _.series, parallel = _.parallel, wait = _.wait, keys = _.keys;
+series = _.series, parallel = _.parallel, wait = _.wait, keys = _.keys, map = _.map;
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
@@ -154,6 +153,12 @@ GoogleMap = (function() {
       return this.triggerMapCenterChanged.apply(this, args);
     }, this));
   }
+  GoogleMap.prototype.getCenter = function() {
+    return this.map.getCenter();
+  };
+  GoogleMap.prototype.getZoom = function() {
+    return this.map.getZoom();
+  };
   GoogleMap.prototype.setLatLng = function(lat, lng) {
     return this.map.setCenter(new google.maps.LatLng(lat, lng));
   };
@@ -190,8 +195,11 @@ GoogleMap = (function() {
   GoogleMap.prototype.triggerNotesChange = function() {
     return this.trigger("noteschange", $('#notes').val());
   };
-  GoogleMap.prototype.addListing = function(listing) {
+  GoogleMap.prototype.addListing = function(listing, d) {
     var bubble, latlng, marker;
+    if (d == null) {
+      d = function() {};
+    }
     latlng = new google.maps.LatLng(listing.get('lat'), listing.get('lng'));
     marker = new google.maps.Marker({
       animation: google.maps.Animation.DROP,
@@ -437,14 +445,28 @@ OfficeListPresenter = (function() {
     });
     return this.map.displayReloading();
   };
-  OfficeListPresenter.prototype.handleSubmit = function(done) {
-    return this.addListing(this.tempListing, done);
-  };
   OfficeListPresenter.prototype.addListing = function(listing, done) {
     if (done == null) {
       done = function() {};
     }
-    listing || (listing = this.tempListing);
+    return series([
+      __bind(function(d) {
+        return this.addTmpListing(listing, function() {
+          return d();
+        });
+      }, this), this.addListingFromTemp
+    ], done);
+  };
+  OfficeListPresenter.prototype.handleSubmit = function(done) {
+    return this.addListingFromTemp(done);
+  };
+  OfficeListPresenter.prototype.addListingFromTemp = function(done) {
+    var listing;
+    if (done == null) {
+      done = function() {};
+    }
+    listing = this.tempListing;
+    listing = this.makeListingObj(listing);
     if (listing) {
       if (!listing.collection) {
         this.listings.add(listing);
@@ -464,14 +486,18 @@ OfficeListPresenter = (function() {
       return this.trigger("error", "no temporary listing");
     }
   };
-  OfficeListPresenter.prototype.addTmpListing = function(listing, callback) {
-    callback || (callback = function() {});
+  OfficeListPresenter.prototype.makeListingObj = function(listing) {
     if (listing.constructor !== Listing) {
       listing = new Listing(listing);
       listing.view = new ListingView({
         model: listing
       });
     }
+    return listing;
+  };
+  OfficeListPresenter.prototype.addTmpListing = function(listing, callback) {
+    callback || (callback = function() {});
+    listing = this.makeListingObj(listing);
     listing.bind("remove", __bind(function(model, collection) {
       return this.map.removeListing(model);
     }, this));
@@ -539,11 +565,17 @@ OfficeListPresenter = (function() {
       return this.tempListing.view.removeVideo();
     }
   };
+  OfficeListPresenter.prototype.signIn = function(userInfo, d) {
+    if (d == null) {
+      d = function() {};
+    }
+    return server(["sessions", userInfo], d);
+  };
   OfficeListPresenter.prototype.handleSignIn = function(values, d) {
     if (d == null) {
       d = function() {};
     }
-    return server(["sessions", values], __bind(function(err, result) {
+    return this.signIn(values, __bind(function(err, result) {
       if (err) {
         liteAlert("The password is incorrect");
         this.signInView.clearPassword();
@@ -590,14 +622,17 @@ OfficeListPresenter = (function() {
     this.handleEmailEntered = __bind(this.handleEmailEntered, this);
     this.handleSignOut = __bind(this.handleSignOut, this);
     this.handleSignIn = __bind(this.handleSignIn, this);
+    this.signIn = __bind(this.signIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);
     this.handleListingChange = __bind(this.handleListingChange, this);
     this.handleNotesChange = __bind(this.handleNotesChange, this);
     this.addTmpListing = __bind(this.addTmpListing, this);
-    this.addListing = __bind(this.addListing, this);
+    this.makeListingObj = __bind(this.makeListingObj, this);
+    this.addListingFromTemp = __bind(this.addListingFromTemp, this);
     this.handleSubmit = __bind(this.handleSubmit, this);
+    this.addListing = __bind(this.addListing, this);
     this.handleReload = __bind(this.handleReload, this);
     this.handleAddedListing = __bind(this.handleAddedListing, this);
     this.handleRefreshedListing = __bind(this.handleRefreshedListing, this);
