@@ -43,7 +43,7 @@ SignInView = (function() {
     this.setQuestion = __bind(this.setQuestion, this);
     this.createEl = __bind(this.createEl, this);    SignInView.__super__.constructor.apply(this, arguments);
     this.el = this.createEl();
-    this.el.find('cancel-sign-in').click(__bind(function(e) {
+    this.el.find('.cancel-sign-in').click(__bind(function(e) {
       e.preventDefault();
       return this.triggerCancelClick();
     }, this));

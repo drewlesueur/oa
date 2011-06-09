@@ -47,7 +47,7 @@ class SignInView extends Backbone.View
   constructor: (mainView) ->
     super
     @el = @createEl() 
-    @el.find('cancel-sign-in').click (e) =>
+    @el.find('.cancel-sign-in').click (e) =>
       e.preventDefault()
       @triggerCancelClick()
     @SignInDiv = @el.find '.login'
