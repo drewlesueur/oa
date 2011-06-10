@@ -5,3 +5,7 @@ git pull origin master
 rm config.coffee
 ln -s ../config.coffee config.coffee
 touch officeatlas.coffee
+
+# to set up nginx
+# see office.the.tl example
+# needs to be in /etc/nginx/sites-enabled (at least sym linked)
