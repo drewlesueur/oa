@@ -204,7 +204,8 @@ class ListingView extends Backbone.View
     $('iframe.video-iframe').remove()
   swapImageWithVideo: (cb=->) =>
     iframe = $ @model.youtubeParser.embed
-    img = @getBubbleDiv().find('img')
+    img = @getBubbleDiv().find('img.thumbnail')
+    log img
     iframe.css 
       display: "none"
       position: "absolute"
@@ -214,6 +215,8 @@ class ListingView extends Backbone.View
     $(document.body).append iframe
 
     _.wait 10, () ->
+      log img.offset().top + "px"
+      log img.offset().left + "px"
       iframe.css
         display: "block"
         top: img.offset().top + "px"
@@ -225,7 +228,7 @@ class ListingView extends Backbone.View
     @content.find(".notes").html @model.get("notes")
     
   getBubbleDiv: () =>
-    $("[data-cid=\"#{@model.cid}\"]")
+    $(".bubble-wrapper[data-cid=\"#{@model.cid}\"]")
   renderBubble: () =>
     @bubble.setContent @getBubbleContent()
 
@@ -241,11 +244,11 @@ class ListingView extends Backbone.View
     height = @model.youtubeParser?.height
 
     if bigImage and width
-      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px;\;height:#{height}px\" />"
+      image = "<img class=\"thumbnail\" src=\"#{bigImage}\" style=\"width:#{width}px;\;height:#{height}px; position: relative\" />"
     else
       image = ""
     str = """
-    <div style="position: relative;" data-cid="#{@model.cid}" data-id="#{@model.id}">
+    <div style="position: relative;" class="bubble-wrapper" data-cid="#{@model.cid}" data-id="#{@model.id}">
       <div class="bubble-position"></div>
       #{@model.get('address')}
       <div class="youtube">

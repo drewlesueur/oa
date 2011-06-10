@@ -327,7 +327,8 @@ ListingView = (function() {
       cb = function() {};
     }
     iframe = $(this.model.youtubeParser.embed);
-    img = this.getBubbleDiv().find('img');
+    img = this.getBubbleDiv().find('img.thumbnail');
+    log(img);
     iframe.css({
       display: "none",
       position: "absolute",
@@ -336,6 +337,8 @@ ListingView = (function() {
     });
     $(document.body).append(iframe);
     return _.wait(10, function() {
+      log(img.offset().top + "px");
+      log(img.offset().left + "px");
       iframe.css({
         display: "block",
         top: img.offset().top + "px",
@@ -348,7 +351,7 @@ ListingView = (function() {
     return this.content.find(".notes").html(this.model.get("notes"));
   };
   ListingView.prototype.getBubbleDiv = function() {
-    return $("[data-cid=\"" + this.model.cid + "\"]");
+    return $(".bubble-wrapper[data-cid=\"" + this.model.cid + "\"]");
   };
   ListingView.prototype.renderBubble = function() {
     return this.bubble.setContent(this.getBubbleContent());
@@ -359,11 +362,11 @@ ListingView = (function() {
     width = (_ref2 = this.model.youtubeParser) != null ? _ref2.width : void 0;
     height = (_ref3 = this.model.youtubeParser) != null ? _ref3.height : void 0;
     if (bigImage && width) {
-      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\;height:" + height + "px\" />";
+      image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\;height:" + height + "px; position: relative\" />";
     } else {
       image = "";
     }
-    str = "<div style=\"position: relative;\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    str = "<div style=\"position: relative;\" class=\"bubble-wrapper\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
     content = $(str);
     content.find("img.thumbnail").click(__bind(function() {
       return this.triggerYoutubeImageClick();
