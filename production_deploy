@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd /home/drew/sites/officeatlas.com/current
+git pull origin master
+rm config.coffee
+ln -s ../config.coffee config.coffee
+touch officeatlas.coffee
