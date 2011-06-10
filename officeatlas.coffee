@@ -10,25 +10,29 @@ log = (args...) -> console.log args...
 
 # reconnect 1 second after the connection closes
 
+client = null
+db = null
 tries = 0
-Client.prototype.makeLastingConnection = () ->
+
+makeLastingConnection = =>
   tries++
+  client = new Client
+  client.host = config.db.host
+  client.user = config.db.user
+  client.password = config.db.password
+  db = new MySqlHelper client
   console.log "trying to make a lasting connection for the #{tries} time"
-  @connect () =>
-    @_connection.on "close", () =>
-      _.wait 1000, () => @makeLastingConnection()
-
+  client.connect (err) =>
+    if err
+      console.log "error connecting to db"
+      return _.wait 5000, makeLastingConnection
+    client._connection.on "close", () =>
+      _.wait 1000, makeLastingConnection
+  client.query("Use #{config.db.db};")
   
-client = new Client
 
-db = new MySqlHelper client
+makeLastingConnection() 
 
-
-client.host = 'drew.the.tl'
-client.user = config.db.user
-client.password = config.db.password
-client.makeLastingConnection()
-client.query("Use #{config.db.db};")
 
 express = require('express')
 
@@ -79,15 +83,24 @@ app.post '/', (req, res) ->
 app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
 
-app.post "/cleanUpTestDb", (req, res) ->
-  db.query "delete from listings where id > 36" , (err) ->
-    console.log "you cleaned the db!!"
-    if err then return res.send err
-    res.send "success"
-
 app.post "/deleteTestUsers", (req, res) ->
-  db.query "delete from users", (err) ->
-    res.send {}
+  if config.env is "production"
+    res.send "no can do", 401
+    return
+  else
+    db.query "delete from users", (err) ->
+      res.send {}
+
+app.post "/cleanUpTestDb", (req, res) ->
+  if config.env is "production"
+    res.send "no can do", 401
+    return
+  else
+    db.query "delete from listings where id > 36" , (err) ->
+      console.log "you cleaned the db!!"
+      if err then return res.send err
+      res.send "success"
+
 
 pg "/p", (req, res) ->
   req.session.poo = "gotta"
