@@ -1,0 +1,9 @@
+module.exports =
+  db: 
+    user: "db-user"
+    password: ""
+    host: "drew.the.tl"
+    db: "office"
+  server:
+    port: 8001
+

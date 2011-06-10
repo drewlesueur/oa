@@ -25,10 +25,10 @@ db = new MySqlHelper client
 
 
 client.host = 'drew.the.tl'
-client.user = config.user
-client.password = config.password
+client.user = config.db.user
+client.password = config.db.password
 client.makeLastingConnection()
-client.query("Use #{config.db};")
+client.query("Use #{config.db.db};")
 
 express = require('express')
 
@@ -171,6 +171,6 @@ app.post "/sessions", (req, res) ->
 exports.app = app
 
 if (!module.parent) 
-  app.listen(8001)
+  app.listen config.server.port || 8001
   console.log("Express server listening on port %d", app.address().port)
 
