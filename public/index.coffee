@@ -102,6 +102,8 @@ class GoogleMap extends Backbone.View
     $('#address').change () => @triggerAddressChange()
     #$("#notes").typed () => @triggerNotesChange()
     $("#notes").keyup () => @triggerNotesChange()
+    $("#price").keyup () => @triggerValueChange "price"
+    $("#squareFeet").keyup () => @triggerValueChange "squareFeet"
     $("#youtube").keyup () => @triggerYoutubeChange()
     $('#reload').click () => @triggerReload()
 
@@ -129,6 +131,9 @@ class GoogleMap extends Backbone.View
     $("#address, #notes, #lat, #lng").val ""
   triggerNotesChange: () =>
     @trigger "noteschange", $('#notes').val()
+  triggerValueChange: (value) =>
+    console.log "the value is #{value}"
+    @trigger "valuechange", value, $("##{value}").val()
   addListing: (listing, d=->) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')
     marker = new google.maps.Marker
@@ -226,6 +231,9 @@ class ListingView extends Backbone.View
 
   updateNotes: () =>
     @content.find(".notes").html @model.get("notes")
+  updateValue: (field, value) =>
+    console.log arguments
+    @content.find(".#{field}").html value
     
   getBubbleDiv: () =>
     $(".bubble-wrapper[data-cid=\"#{@model.cid}\"]")
@@ -257,6 +265,12 @@ class ListingView extends Backbone.View
       <br />
       <div class="notes">
         #{@model.get('notes')}
+      </div>
+      <div class="squareFeet">
+        #{@model.get('squareFeet')}
+      </div>
+      <div class="price">
+        #{@model.get('price')}
       </div>
     </div>
     """
@@ -352,6 +366,9 @@ class OfficeListPresenter
       @map.removeListing model
     listing.bind "change:notes", () => 
       @handleNotesChange listing
+    listing.bind "listingvaluechange", (args...) => 
+      @handleValueChange listing, args...
+      
     listing.bind "change:youtube", () => @handleListingChange listing
 
     @map.lookup listing.get('address'), (err, results) =>
@@ -371,11 +388,20 @@ class OfficeListPresenter
       callback null, listing
   handleNotesChange: (listing) =>
     listing.view.updateNotes()
+  handleValueChange: (listing, field, value) =>
+    listing.view.updateValue field, value
   handleListingChange: (listing) =>
     listing.view.renderBubble()
   handleAppNotesChange: (notes, cb=->) =>
     if not @tempListing then return cb()
     @tempListing.set notes: notes
+    cb()
+  handleAppValueChange: (field, value, cb=->) =>
+    if not @tempListing then return cb()
+    toSet = {}
+    toSet[field] = value
+    @tempListing.set toSet
+    @tempListing.trigger "listingvaluechange", field, value #this seems like there is a betterway to do this
     cb()
   handleAppYoutubeChange: (youtube, cb=->) =>
     if not @tempListing then return cb()
@@ -434,6 +460,7 @@ class OfficeListPresenter
     # @map really should be @view
     @map.bind "addresschange", @addTmpListing
     @map.bind "noteschange", @handleAppNotesChange
+    @map.bind "valuechange", @handleAppValueChange
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
     @map.bind "mapcenterchanged", @handleMapCenterChanged

@@ -42,8 +42,8 @@ for (name in toMonkeyPatch) {
   monkeyPatch(String.prototype, name, func);
 }
 officeTest = (function() {
-  var addTmpListing, bind, cleanDb, clone, doneMaker, e, eq, getTestLink, indexOf, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, onHaveAllCards, parallel, preRun, runTest, runTestWhenReady, runTests, runTestsWhenReady, s, savingAListing, see, self, series, takeCard, test, testKeys, tests, testsComplete, trigger, wait, waitForYoutube, _i, _len, _ref;
-  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s, doneMaker = _.doneMaker, bind = _.addListener, trigger = _.trigger, map = _.map, indexOf = _.indexOf, clone = _.clone;
+  var addTmpListing, bind, cleanDb, clone, doneMaker, e, eq, getTestLink, indexOf, isEqual, key, keys, listingModels, map, ne, newTests, noSee, ok, onHaveAllCards, parallel, preRun, runTest, runTestWhenReady, runTests, runTestsWhenReady, s, savingAListing, see, self, series, takeCard, test, testKeys, tests, testsComplete, times, trigger, wait, waitForYoutube, _i, _len, _ref;
+  see = _.assertSee, e = _.assertEqual, ne = _.assertNotEqual, eq = _.assertEqual, noSee = _.assertNoSee, series = _.series, parallel = _.parallel, wait = _.wait, ok = _.assertOk, keys = _.keys, isEqual = _.isEqual, s = _.s, doneMaker = _.doneMaker, bind = _.addListener, trigger = _.trigger, map = _.map, indexOf = _.indexOf, clone = _.clone, times = _.times;
   _ref = doneMaker(), takeCard = _ref[0], onHaveAllCards = _ref[1];
   tests = {};
   test = function(title, func) {
@@ -156,7 +156,15 @@ officeTest = (function() {
     _.assertSee("Youtube html");
     return done();
   });
-  test("typing in notes should update the bubble", function(done) {
+  test("There should be a square feet box", function(done) {
+    _.assertSee("Square Ft.", "see sqaure feet");
+    return done();
+  });
+  test("There should be a price box", function(done) {
+    _.assertSee("Price", "see price");
+    return done();
+  });
+  test("typing should update the bubble", function(done) {
     var listing;
     return listing = app.addTmpListing({
       address: "lds temple mesa, az",
@@ -164,7 +172,17 @@ officeTest = (function() {
     }, function() {
       $('#notes').val("testing notes");
       app.map.triggerNotesChange();
-      _.assertOk($('.notes:contains(testing notes)').length, 1, "notes should update on change");
+      ok($('.notes:contains(testing notes)').length, 1, "notes should update on change");
+      $('#price').val("100 dollars");
+      app.map.triggerValueChange("price");
+      eq($('.price:contains(100 dollars)').length, 1, "price should update on change");
+      $('#squareFeet').val("2sqft.");
+      app.map.triggerValueChange("squareFeet");
+      eq($('.squareFeet:contains(2sqft.)').length, 1, "sqft should update");
+      console.log(app.tempListing);
+      eq(app.tempListing.get("price"), "100 dollars");
+      eq(app.tempListing.get("squareFeet"), "2sqft.");
+      eq(app.tempListing.get("notes"), "testing notes");
       app.listings.remove(listing);
       return done();
     });
@@ -447,6 +465,7 @@ officeTest = (function() {
       return returnCard();
     });
   })();
+  test("some random ui tests", function(d) {});
   testKeys = keys(tests).reverse();
   log(testKeys);
   newTests = {};

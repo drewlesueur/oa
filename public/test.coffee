@@ -62,6 +62,7 @@ officeTest = do () ->
     map: map
     indexOf: indexOf
     clone: clone
+    times: times
   } = _
   
   [takeCard, onHaveAllCards] = doneMaker()
@@ -168,20 +169,46 @@ officeTest = do () ->
         _.assertEqual oldNewListings.length, newNewListings.length, "only one non saved listing at a time"
         done()
 
-       
+  #the form 
   test "There should be a youtube video video box", (done) ->
     _.assertSee "Youtube html"
     done()
+    
+  test "There should be a square feet box", (done) ->
+    _.assertSee "Square Ft.", "see sqaure feet"
+    done()
 
-  test "typing in notes should update the bubble", (done) ->
+  test "There should be a price box", (done) ->
+    _.assertSee "Price", "see price"
+    done()
+
+  
+  test "typing should update the bubble", (done) ->
     listing = app.addTmpListing
       address: "lds temple mesa, az"
       notes: ""
     , () ->
+
       $('#notes').val "testing notes"
       app.map.triggerNotesChange()
-      _.assertOk $('.notes:contains(testing notes)').length, 1,
-      "notes should update on change"
+      ok $('.notes:contains(testing notes)').length, 1, "notes should update on change"
+
+      $('#price').val "100 dollars"
+      app.map.triggerValueChange "price"
+      eq $('.price:contains(100 dollars)').length, 1, "price should update on change"
+
+      $('#squareFeet').val "2sqft."
+      app.map.triggerValueChange "squareFeet"
+      eq $('.squareFeet:contains(2sqft.)').length, 1, "sqft should update"
+
+      console.log app.tempListing
+      eq app.tempListing.get( "price"), "100 dollars"
+      eq app.tempListing.get( "squareFeet"), "2sqft." 
+      eq app.tempListing.get( "notes"), "testing notes" 
+      #TODO: also test on the server     
+
+      
+
       app.listings.remove listing
       done()
 
@@ -470,6 +497,8 @@ officeTest = do () ->
         d()
       returnCard()
     
+  test "some random ui tests", (d) ->
+
 
 
   

@@ -4,7 +4,29 @@ _ = require "underscore"
 require("drews-mixins") _
 MySqlHelper = require("mysql-helper").MySqlHelper
 
-{wait} = _
+mongo = require("mongodb")
+mongoHost = config.db.host
+mongoPort = config.db.port || mongo.Connection.DEFAULT_PORT
+ObjectId = mongo.BSONPure.ObjectId
+db = null
+dbBig = new mongo.Db config.db.db,
+  new mongo.Server mongoHost, mongoPort, {}
+  {}
+
+listings = null
+users = null
+dbBig.open (err, _db) -> 
+  db = _db
+  db.collection 'listings', (err, collection) ->
+    listings = collection
+  db.collection 'users', (err, collection) ->
+    users = collection
+    
+# this works
+#  db.collection 'things', (err, collection) ->
+#    collection.insert {a:"this is a drew test"}
+    
+{keys, wait} = _
 
 log = (args...) -> console.log args... 
 
@@ -14,24 +36,8 @@ client = null
 db = null
 tries = 0
 
-makeLastingConnection = =>
-  tries++
-  client = new Client
-  client.host = config.db.host
-  client.user = config.db.user
-  client.password = config.db.password
-  db = new MySqlHelper client
-  console.log "trying to make a lasting connection for the #{tries} time"
-  client.connect (err) =>
-    if err
-      console.log "error connecting to db"
-      return _.wait 5000, makeLastingConnection
-    client._connection.on "close", () =>
-      _.wait 1000, makeLastingConnection
-  client.query("Use #{config.db.db};")
   
 
-makeLastingConnection() 
 
 
 express = require('express')
@@ -70,25 +76,22 @@ app.get '/', (req, res) ->
   res.sendfile "index.html"
   #res.send "hello world"
 
-app.post '/', (req, res) ->
-  res.send req.param "address"
-  client.query "INSERT INTO listings 
-    (address, notes, lat, lng) 
-  values (?, ?, ?, ?)" 
-  , [req.param("address"), req.param("notes"), 
-  req.param("lat"), req.param("lng")]
-  res.send "thanks"
 
 
 app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
 
 app.post "/deleteTestUsers", (req, res) ->
+  console.log "delete test users"
   if config.env is "production"
     res.send "no can do", 401
     return
   else
-    db.query "delete from users", (err) ->
+    users.remove (err) ->
+      if !err
+        console.log "should have deleted test users"
+      else
+        console.log "cant delete users"
       res.send {}
 
 app.post "/cleanUpTestDb", (req, res) ->
@@ -96,7 +99,7 @@ app.post "/cleanUpTestDb", (req, res) ->
     res.send "no can do", 401
     return
   else
-    db.query "delete from listings where id > 36" , (err) ->
+    listings.remove {address: {"$ne": "gilbert, az" }}, (err) ->
       console.log "you cleaned the db!!"
       if err then return res.send err
       res.send "success"
@@ -110,13 +113,14 @@ pg "/whoami", (req, res) ->
   res.send req.session
   
 pg "/questions/:email", (req, res) ->
-  db.query "select question from users where email = ?", [req.params.email], (err, result) ->
+  console.log "GOT to the email thing"
+  users.findOne email:req.params.email, (err, user) ->
     if err then return res.send err, 500
-    if result.length then return res.send result[0]
-    res.send {error: err}, 400 
+    if user then return res.send user
+    res.send {error: err.getMessage()}, 400 
 
 app.post "/listings", (req, res) ->
-  db.insert "listings", req.body, (err) ->
+  listings.insert req.body, (err) ->
     if err
       console.log "there was an error"  
       return res.send err.message
@@ -124,16 +128,15 @@ app.post "/listings", (req, res) ->
       res.send {'yay': 1}
     
 app.get "/listings", (req, res) ->
-  db.query "select * from listings", (err, results) ->
+  listings.find().toArray (err, _listings) ->
    if err then return res.send {}, 500
-   res.send results,
+   res.send _listings,
      "Cache-Control": "no-cache, must-revalidate"
      "Expires": "Sat, 26 Jul 1997 05:00:00 GMT"
   
 userExists = (email, cb=->) ->
-  db.query "select * from users where email = ?",
-  [email], (err, result) ->
-    if result?.length > 0
+  users.findOne email: email, (err, user) ->
+    if user
       cb null, true
     else 
       cb null, false
@@ -155,10 +158,14 @@ pg "/json_test", (req, res) ->
 app.post "/sessions", (req, res) ->
   userExists req.body.email, (err, result) ->
     if result is true
-      db.query "select * from users where email = ? and question = ? and password = password(?)",
-        [req.body.email, req.body.question, req.body.password],
-        (err, results) ->
-          if results.length is 0
+      users.findOne 
+        email: req.body.email
+        question: req.body.question 
+        password: req.body.password
+        (err, user) -> 
+          console.log "the user is"
+          console.log user
+          if not user
             res.send {error: "wrong combo"}, 401
           else
             req.session.email = req.body.email
@@ -168,11 +175,7 @@ app.post "/sessions", (req, res) ->
       # just create the user
       #db.insert "users", req.body, (err) ->
       {email, question, password} = req.body
-      db.query """
-        insert into users (email, question, password)
-        values
-        (?, ?, password(?))
-      """, [email, question, password], (err) ->
+      users.insert req.body, (err) ->
         req.session.email = req.body.email
         if err then return res.send {error: "couldn't create user"}, 500
         res.send {"message": "created user"} #200

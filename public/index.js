@@ -117,6 +117,7 @@ GoogleMap = (function() {
     this.addListings = __bind(this.addListings, this);
     this.updateCurrentBubbleNotes = __bind(this.updateCurrentBubbleNotes, this);
     this.addListing = __bind(this.addListing, this);
+    this.triggerValueChange = __bind(this.triggerValueChange, this);
     this.triggerNotesChange = __bind(this.triggerNotesChange, this);
     this.clearFields = __bind(this.clearFields, this);
     this.triggerAddressChange = __bind(this.triggerAddressChange, this);
@@ -140,6 +141,12 @@ GoogleMap = (function() {
     }, this));
     $("#notes").keyup(__bind(function() {
       return this.triggerNotesChange();
+    }, this));
+    $("#price").keyup(__bind(function() {
+      return this.triggerValueChange("price");
+    }, this));
+    $("#squareFeet").keyup(__bind(function() {
+      return this.triggerValueChange("squareFeet");
     }, this));
     $("#youtube").keyup(__bind(function() {
       return this.triggerYoutubeChange();
@@ -194,6 +201,10 @@ GoogleMap = (function() {
   };
   GoogleMap.prototype.triggerNotesChange = function() {
     return this.trigger("noteschange", $('#notes').val());
+  };
+  GoogleMap.prototype.triggerValueChange = function(value) {
+    console.log("the value is " + value);
+    return this.trigger("valuechange", value, $("#" + value).val());
   };
   GoogleMap.prototype.addListing = function(listing, d) {
     var bubble, latlng, marker;
@@ -304,6 +315,7 @@ ListingView = (function() {
     this.getBubbleContent = __bind(this.getBubbleContent, this);
     this.renderBubble = __bind(this.renderBubble, this);
     this.getBubbleDiv = __bind(this.getBubbleDiv, this);
+    this.updateValue = __bind(this.updateValue, this);
     this.updateNotes = __bind(this.updateNotes, this);
     this.swapImageWithVideo = __bind(this.swapImageWithVideo, this);
     this.removeVideo = __bind(this.removeVideo, this);
@@ -350,6 +362,10 @@ ListingView = (function() {
   ListingView.prototype.updateNotes = function() {
     return this.content.find(".notes").html(this.model.get("notes"));
   };
+  ListingView.prototype.updateValue = function(field, value) {
+    console.log(arguments);
+    return this.content.find("." + field).html(value);
+  };
   ListingView.prototype.getBubbleDiv = function() {
     return $(".bubble-wrapper[data-cid=\"" + this.model.cid + "\"]");
   };
@@ -366,7 +382,7 @@ ListingView = (function() {
     } else {
       image = "";
     }
-    str = "<div style=\"position: relative;\" class=\"bubble-wrapper\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n</div>";
+    str = "<div style=\"position: relative;\" class=\"bubble-wrapper\" data-cid=\"" + this.model.cid + "\" data-id=\"" + this.model.id + "\">\n  <div class=\"bubble-position\"></div>\n  " + (this.model.get('address')) + "\n  <div class=\"youtube\">\n   " + image + " \n  </div>\n  <br />\n  <div class=\"notes\">\n    " + (this.model.get('notes')) + "\n  </div>\n  <div class=\"squareFeet\">\n    " + (this.model.get('squareFeet')) + "\n  </div>\n  <div class=\"price\">\n    " + (this.model.get('price')) + "\n  </div>\n</div>";
     content = $(str);
     content.find("img.thumbnail").click(__bind(function() {
       return this.triggerYoutubeImageClick();
@@ -507,6 +523,11 @@ OfficeListPresenter = (function() {
     listing.bind("change:notes", __bind(function() {
       return this.handleNotesChange(listing);
     }, this));
+    listing.bind("listingvaluechange", __bind(function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.handleValueChange.apply(this, [listing].concat(__slice.call(args)));
+    }, this));
     listing.bind("change:youtube", __bind(function() {
       return this.handleListingChange(listing);
     }, this));
@@ -533,6 +554,9 @@ OfficeListPresenter = (function() {
   OfficeListPresenter.prototype.handleNotesChange = function(listing) {
     return listing.view.updateNotes();
   };
+  OfficeListPresenter.prototype.handleValueChange = function(listing, field, value) {
+    return listing.view.updateValue(field, value);
+  };
   OfficeListPresenter.prototype.handleListingChange = function(listing) {
     return listing.view.renderBubble();
   };
@@ -546,6 +570,20 @@ OfficeListPresenter = (function() {
     this.tempListing.set({
       notes: notes
     });
+    return cb();
+  };
+  OfficeListPresenter.prototype.handleAppValueChange = function(field, value, cb) {
+    var toSet;
+    if (cb == null) {
+      cb = function() {};
+    }
+    if (!this.tempListing) {
+      return cb();
+    }
+    toSet = {};
+    toSet[field] = value;
+    this.tempListing.set(toSet);
+    this.tempListing.trigger("listingvaluechange", field, value);
     return cb();
   };
   OfficeListPresenter.prototype.handleAppYoutubeChange = function(youtube, cb) {
@@ -628,8 +666,10 @@ OfficeListPresenter = (function() {
     this.signIn = __bind(this.signIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
+    this.handleAppValueChange = __bind(this.handleAppValueChange, this);
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);
     this.handleListingChange = __bind(this.handleListingChange, this);
+    this.handleValueChange = __bind(this.handleValueChange, this);
     this.handleNotesChange = __bind(this.handleNotesChange, this);
     this.addTmpListing = __bind(this.addTmpListing, this);
     this.makeListingObj = __bind(this.makeListingObj, this);
@@ -654,6 +694,7 @@ OfficeListPresenter = (function() {
     this.listings.fetch();
     this.map.bind("addresschange", this.addTmpListing);
     this.map.bind("noteschange", this.handleAppNotesChange);
+    this.map.bind("valuechange", this.handleAppValueChange);
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
