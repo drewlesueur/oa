@@ -114,7 +114,7 @@ officeTest = (function() {
     });
   };
   cleanDb = function(done) {
-    return server("cleanUpTestDb", function(err) {
+    return jsonPost("/cleanUpTestDb", function(err) {
       return done();
     });
   };
@@ -352,7 +352,7 @@ officeTest = (function() {
       });
     };
     rightCreds = function(d) {
-      return server("whoami", function(err, result) {
+      return jsonPost("/whoami", function(err, result) {
         eq(result.email, "drewalex@gmail.com", "should have my email");
         return d();
       });
@@ -375,11 +375,11 @@ officeTest = (function() {
     };
     return series([
       function(d) {
-        return server("deleteTestUsers", function() {
+        return jsonPost("/deleteTestUsers", function() {
           return d();
         });
       }, app.signInView.triggerSignInClick, login, rightCreds, logInTests, app.signInView.triggerSignOutClick, function(d) {
-        return server("whoami", function(err, result) {
+        return jsonPost("/whoami", function(err, result) {
           ok(!("email" in result));
           return d();
         });
@@ -390,13 +390,11 @@ officeTest = (function() {
     });
   });
   test("auto fill in the question", function(d) {
-    return server([
-      "sessions", {
-        email: "drewalex@gmail.com",
-        question: "What_is_your_fav_color_",
-        password: "blue"
-      }
-    ], function(err, result) {
+    return jsonPost("/sessions", {
+      email: "drewalex@gmail.com",
+      question: "What_is_your_fav_color_",
+      password: "blue"
+    }, function(err, result) {
       var onEmailEntered;
       app.signInView.triggerSignInClick();
       $(".question").val("What_is_your_dogs_maiden_name_");
@@ -412,7 +410,7 @@ officeTest = (function() {
     });
   });
   test("server test", function(d) {
-    return server("json_test", function(err, json) {
+    return jsonPost("/json_test", function(err, json) {
       eq(err, null, "should not get error from test json");
       eq(json.a, 1);
       eq(json.band.name, "aterciopelados");
@@ -428,7 +426,7 @@ officeTest = (function() {
     };
     return app.addListing(rawListing, function(err, listing) {
       ok(!err, "no error while calling add lisging");
-      return get("listings", function(err, listings) {
+      return jsonGet("/listings", function(err, listings) {
         var notes;
         notes = map(listings, function(listing) {
           return listing.notes;
@@ -465,7 +463,12 @@ officeTest = (function() {
       return returnCard();
     });
   })();
-  test("some random ui tests", function(d) {});
+  test("some random ui tests", function(d) {
+    return d();
+  });
+  test("file upload", function(d) {
+    return d();
+  });
   testKeys = keys(tests).reverse();
   log(testKeys);
   newTests = {};
@@ -477,7 +480,7 @@ officeTest = (function() {
   listingModels = null;
   testsComplete = function(err, results) {
     var failedMessages, failures, message, _j, _len2;
-    server("cleanUpTestDb", function(err, result) {
+    jsonPost("/cleanUpTestDb", function(err, result) {
       if (!err) {
         return liteAlert("data cleaned");
       }

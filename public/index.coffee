@@ -2,23 +2,6 @@ console ?=
   log: () ->
 log = (args...) ->
   console.log args...
-serverMaker = (httpMethod) ->
-  server = (method, callback) ->
-    if _.isArray method
-      [method, args, httpMethod] = method
-    #TODO: why does the {} work?
-    data = JSON.stringify args || {}
-    $.ajax 
-      url: "/#{method}"
-      type: httpMethod || "POST"
-      contentType: 'application/json'
-      data: data
-      dataType: 'json'
-      processData: false
-      success: (data) -> callback null, data
-      error: (data) -> callback data
-server = serverMaker "POST"
-get = serverMaker "GET"
 
 liteAlert = (message) ->
   console.log message
@@ -81,6 +64,9 @@ _.each ['s'], (method) ->
   wait: wait
   keys: keys
   map: map
+  each: each
+  jsonPost
+  jsonGet
 } = _
 
 #this class is really the main view    
@@ -106,11 +92,16 @@ class GoogleMap extends Backbone.View
     $("#squareFeet").keyup () => @triggerValueChange "squareFeet"
     $("#youtube").keyup () => @triggerYoutubeChange()
     $('#reload').click () => @triggerReload()
+    $('#pictures').bind "change", () =>
+      files = $("#pictures")[0].files
+      @trigger "picturesready", files
+      
 
     google.maps.event.addListener @map, "center_changed", (args...) =>
       @triggerMapCenterChanged args...
-  getCenter: -> @map.getCenter()
-  getZoom: -> @map.getZoom()
+      
+  getCenter: => @map.getCenter()
+  getZoom: => @map.getZoom()
   setLatLng:  (lat, lng) =>
     @map.setCenter new google.maps.LatLng lat, lng
   triggerMapCenterChanged: (args...) =>
@@ -132,7 +123,6 @@ class GoogleMap extends Backbone.View
   triggerNotesChange: () =>
     @trigger "noteschange", $('#notes').val()
   triggerValueChange: (value) =>
-    console.log "the value is #{value}"
     @trigger "valuechange", value, $("##{value}").val()
   addListing: (listing, d=->) =>
     latlng = new google.maps.LatLng listing.get('lat'), listing.get('lng')
@@ -232,7 +222,6 @@ class ListingView extends Backbone.View
   updateNotes: () =>
     @content.find(".notes").html @model.get("notes")
   updateValue: (field, value) =>
-    console.log arguments
     @content.find(".#{field}").html value
     
   getBubbleDiv: () =>
@@ -408,11 +397,54 @@ class OfficeListPresenter
     @tempListing.set youtube: youtube
 
     cb()
+  handlePictures: (files, cb=->) =>
+    each files, (file) ->
+      formData = new FormData
+      formData.append "name", file.name
+      #formData.append "name[0]", file.name
+      formData.append "size", file.size
+      formData.append "type", file.type
+      formData.append "file", file
+      reader = new FileReader()
+      xhr = new XMLHttpRequest()
+      xhr.open("POST", "/pictures");
+      xhr.onload = (e) ->
+        console.log "done!"
+      xhr.onerror = (e) -> cb e
+      xhr.send formData 
+      ###
+      #xhr.overrideMimeType('text/plain; charset=x-user-defined-binary');
+      #xhr.overrideMimeType('multipart/form-data');
+      #xhr.setRequestHeader 'Content-Type', 'multipart/form-data'
+      xhr.setRequestHeader 'Content-Type', 'binary'
+      reader.onload = (e) ->
+        #xhr.sendAsBinary e.target.result
+        xhr.send e.target.result
+      reader.readAsBinaryString file
+      ###
+
+      ###
+      xhr = new XMLHttpRequest    
+      xhr.open "post", "/pictures", true
+      self = @
+      xhr.onreadystatechange = () ->
+        if this.readyState == "200"
+          resp = JSON.parse this.responseText
+          self.trigger "newimage", resp
+          console.log resp
+      xhr.onerror = (e) -> log e
+      xhr.setRequestHeader('Content-Type', 'multipart/form-data');
+      xhr.setRequestHeader('X-File-Name', file.fileName);
+      xhr.setRequestHeader('X-File-Size', file.fileSize);
+      xhr.send file
+      ###
   handleMapCenterChanged: (cb=->) =>
     if @tempListing
       @tempListing.view.removeVideo()
   signIn: (userInfo, d=->) =>
-    server ["sessions", userInfo], d
+    log "the user info is"
+    console.log userInfo
+    jsonPost "/sessions", userInfo, d
   handleSignIn: (values, d=->) =>
     @signIn values, (err, result) =>
       if err
@@ -426,12 +458,12 @@ class OfficeListPresenter
         # sucedio 
   handleSignOut: (d=->) =>
     #TODO: make this more restful
-    server "signout", (err, result) =>
+    jsonPost "/signout", (err, result) =>
       if err then return alert "there was a problem signing out"
       @signInView.hideSignedInAs()
       d()
   handleEmailEntered: (email, d=->) =>
-    get "questions/#{email}/", (err, res) =>
+    jsonPost "/questions/#{email}/", (err, res) =>
       if err then return d()
       @signInView.setQuestion res.question
       @signInView.focusAnswer()
@@ -464,6 +496,7 @@ class OfficeListPresenter
     @map.bind "youtubechange", @handleAppYoutubeChange
     @map.bind "reload", @handleReload
     @map.bind "mapcenterchanged", @handleMapCenterChanged
+    @map.bind "picturesready", @handlePictures
     @map.bind "signin", @handleSignIn
     @map.bind "signout", @handleSignOut
     @map.bind "emailentered", @handleEmailEntered
@@ -488,7 +521,7 @@ class OfficeListPresenter
     navigator.geolocation?.getCurrentPosition?(onLoc)
     @signInView = new SignInView(@map)
     log "who am i"
-    server "whoami", (err, data) =>
+    jsonPost "/whoami", (err, data) =>
       if data.email
         @signInView.showSignedInAs data.email
 # Should this code be here

@@ -2,7 +2,11 @@ config = require './config.coffee'
 Client = require('mysql').Client
 _ = require "underscore"
 require("drews-mixins") _
+form = require "connect-form"
+console.log form.toString()
 MySqlHelper = require("mysql-helper").MySqlHelper
+#exec = require("child_processes").exec
+
 
 mongo = require("mongodb")
 mongoHost = config.db.host
@@ -25,8 +29,9 @@ dbBig.open (err, _db) ->
 # this works
 #  db.collection 'things', (err, collection) ->
 #    collection.insert {a:"this is a drew test"}
-    
-{keys, wait} = _
+
+# destructuring assignments
+{keys, wait, time, rnd} = _
 
 log = (args...) -> console.log args... 
 
@@ -49,6 +54,7 @@ drewsSignIn = (req, res, next) ->
 
 app = module.exports = express.createServer()
 app.configure () ->
+  app.use form()
   app.use(express.bodyParser())
   app.use express.cookieParser()
   app.use express.session secret: "boom shaka laka"
@@ -76,7 +82,23 @@ app.get '/', (req, res) ->
   res.sendfile "index.html"
   #res.send "hello world"
 
+app.post "/oldpictures", (req, res) ->
+  ###
+  log "trying to uplaod a pictures"
+  fileName = "#{time}_#{rnd(1,200)}" 
+  s = fd.createWriteStream 
+  req.on 'data', (data) ->
+    console.log "there was a new data"
+  ###
 
+
+app.post "/pictures", (req, res) ->
+  log "old trying to uplaod a pictures"
+  if not req.form
+    res.send "you need to do mulitpart/form-data"
+  else
+    req.form.complete (err, fields, files) ->
+      res.send JSON.stringify files
 
 app.get "/drew", (req, res) ->
   res.send "aguzate, hazte valer"
@@ -94,7 +116,7 @@ app.post "/deleteTestUsers", (req, res) ->
         console.log "cant delete users"
       res.send {}
 
-app.post "/cleanUpTestDb", (req, res) ->
+pg "/cleanUpTestDb", (req, res) ->
   if config.env is "production"
     res.send "no can do", 401
     return
@@ -102,7 +124,7 @@ app.post "/cleanUpTestDb", (req, res) ->
     listings.remove {address: {"$ne": "gilbert, az" }}, (err) ->
       console.log "you cleaned the db!!"
       if err then return res.send err
-      res.send "success"
+      res.send yay:"success"
 
 
 pg "/p", (req, res) ->
@@ -179,9 +201,6 @@ app.post "/sessions", (req, res) ->
         req.session.email = req.body.email
         if err then return res.send {error: "couldn't create user"}, 500
         res.send {"message": "created user"} #200
-
-  
-  
 
 
 exports.app = app

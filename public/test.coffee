@@ -138,7 +138,7 @@ officeTest = do () ->
 
 
   cleanDb = (done) ->
-    server "cleanUpTestDb", (err) ->
+    jsonPost "/cleanUpTestDb", (err) ->
       done()
 
   test "I should be able to save", (done) -> 
@@ -369,7 +369,7 @@ officeTest = do () ->
         d()
    
     rightCreds = (d) ->
-      server "whoami", (err, result) ->
+      jsonPost "/whoami", (err, result) ->
         eq result.email, "drewalex@gmail.com", "should have my email"
         d()
 
@@ -396,7 +396,7 @@ officeTest = do () ->
 
     series [
       # delete test users
-      (d) -> server "deleteTestUsers", -> d()
+      (d) -> jsonPost "/deleteTestUsers", -> d()
 
       #sign in 
       app.signInView.triggerSignInClick
@@ -415,7 +415,7 @@ officeTest = do () ->
 
       # make sure you have don't have the right cookies 
       (d) ->
-        server "whoami", (err, result) ->
+        jsonPost "/whoami", (err, result) ->
           ok ("email" not of result)
           d()
 
@@ -435,11 +435,11 @@ officeTest = do () ->
       d()
       
   test "auto fill in the question", (d) ->
-    server ["sessions", {
+    jsonPost "/sessions", {
       email: "drewalex@gmail.com" 
       question: "What_is_your_fav_color_"
       password: "blue"
-    }], (err, result) ->
+    }, (err, result) ->
       
 
       app.signInView.triggerSignInClick()
@@ -460,7 +460,7 @@ officeTest = do () ->
         
     
   test "server test", (d) ->
-    server "json_test", (err, json) ->
+    jsonPost "/json_test", (err, json) ->
       eq err, null, "should not get error from test json"
       eq json.a, 1
       eq json.band.name, "aterciopelados"
@@ -474,7 +474,7 @@ officeTest = do () ->
     rawListing = address: "maricopa, az", notes: "maricopa notes", youtube: "http://www.youtube.com/watch?v=S6L9wccThyA"
     app.addListing rawListing, (err, listing) ->
       ok !err, "no error while calling add lisging"
-      get "listings", (err, listings) ->
+      jsonGet "/listings", (err, listings) ->
         notes = map listings, (listing) -> listing.notes
         ok indexOf(notes, "maricopa notes") != -1, "notes should appear in the add listing"
         done()
@@ -498,9 +498,12 @@ officeTest = do () ->
       returnCard()
     
   test "some random ui tests", (d) ->
+    d()
 
+  test "file upload", (d) ->
+    d()
 
-
+  # end of tests
   
   testKeys = keys(tests).reverse()
   # testsKeys = reverse keys tests
@@ -516,7 +519,7 @@ officeTest = do () ->
 
 
   testsComplete = (err, results) -> 
-    server "cleanUpTestDb", (err, result) ->
+    jsonPost "/cleanUpTestDb", (err, result) ->
       if not err then liteAlert "data cleaned"
       
     failures = "<ul>"

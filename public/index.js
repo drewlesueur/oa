@@ -1,4 +1,4 @@
-var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, get, keys, liteAlert, log, map, parallel, series, server, serverMaker, wait;
+var GoogleMap, Listing, ListingView, Listings, OfficeListController, OfficeListPresenter, YoutubeParser, each, jsonGet, jsonPost, keys, liteAlert, log, map, parallel, series, wait;
 var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -19,32 +19,6 @@ log = function() {
   args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
   return console.log.apply(console, args);
 };
-serverMaker = function(httpMethod) {
-  var server;
-  return server = function(method, callback) {
-    var args, data, _ref;
-    if (_.isArray(method)) {
-      _ref = method, method = _ref[0], args = _ref[1], httpMethod = _ref[2];
-    }
-    data = JSON.stringify(args || {});
-    return $.ajax({
-      url: "/" + method,
-      type: httpMethod || "POST",
-      contentType: 'application/json',
-      data: data,
-      dataType: 'json',
-      processData: false,
-      success: function(data) {
-        return callback(null, data);
-      },
-      error: function(data) {
-        return callback(data);
-      }
-    });
-  };
-};
-server = serverMaker("POST");
-get = serverMaker("GET");
 liteAlert = function(message) {
   return console.log(message);
 };
@@ -105,7 +79,7 @@ _.each(['s'], function(method) {
     return _[method].apply(_, [this.models].concat(_.toArray(arguments)));
   };
 });
-series = _.series, parallel = _.parallel, wait = _.wait, keys = _.keys, map = _.map;
+series = _.series, parallel = _.parallel, wait = _.wait, keys = _.keys, map = _.map, each = _.each, jsonPost = _.jsonPost, jsonGet = _.jsonGet;
 GoogleMap = (function() {
   __extends(GoogleMap, Backbone.View);
   function GoogleMap(width, height) {
@@ -124,7 +98,9 @@ GoogleMap = (function() {
     this.triggerYoutubeChange = __bind(this.triggerYoutubeChange, this);
     this.triggerReload = __bind(this.triggerReload, this);
     this.triggerMapCenterChanged = __bind(this.triggerMapCenterChanged, this);
-    this.setLatLng = __bind(this.setLatLng, this);    this.el = $(this.make("div"));
+    this.setLatLng = __bind(this.setLatLng, this);
+    this.getZoom = __bind(this.getZoom, this);
+    this.getCenter = __bind(this.getCenter, this);    this.el = $(this.make("div"));
     this.el.css({
       width: $(window).width() - 300 + "px",
       height: $(window).height() + "px"
@@ -153,6 +129,11 @@ GoogleMap = (function() {
     }, this));
     $('#reload').click(__bind(function() {
       return this.triggerReload();
+    }, this));
+    $('#pictures').bind("change", __bind(function() {
+      var files;
+      files = $("#pictures")[0].files;
+      return this.trigger("picturesready", files);
     }, this));
     google.maps.event.addListener(this.map, "center_changed", __bind(function() {
       var args;
@@ -203,7 +184,6 @@ GoogleMap = (function() {
     return this.trigger("noteschange", $('#notes').val());
   };
   GoogleMap.prototype.triggerValueChange = function(value) {
-    console.log("the value is " + value);
     return this.trigger("valuechange", value, $("#" + value).val());
   };
   GoogleMap.prototype.addListing = function(listing, d) {
@@ -363,7 +343,6 @@ ListingView = (function() {
     return this.content.find(".notes").html(this.model.get("notes"));
   };
   ListingView.prototype.updateValue = function(field, value) {
-    console.log(arguments);
     return this.content.find("." + field).html(value);
   };
   ListingView.prototype.getBubbleDiv = function() {
@@ -598,6 +577,54 @@ OfficeListPresenter = (function() {
     });
     return cb();
   };
+  OfficeListPresenter.prototype.handlePictures = function(files, cb) {
+    if (cb == null) {
+      cb = function() {};
+    }
+    return each(files, function(file) {
+      var formData, reader, xhr;
+      formData = new FormData;
+      formData.append("name", file.name);
+      formData.append("size", file.size);
+      formData.append("type", file.type);
+      formData.append("file", file);
+      reader = new FileReader();
+      xhr = new XMLHttpRequest();
+      xhr.open("POST", "/pictures");
+      xhr.onload = function(e) {
+        return console.log("done!");
+      };
+      xhr.onerror = function(e) {
+        return cb(e);
+      };
+      return xhr.send(formData);
+      /*
+            #xhr.overrideMimeType('text/plain; charset=x-user-defined-binary');
+            #xhr.overrideMimeType('multipart/form-data');
+            #xhr.setRequestHeader 'Content-Type', 'multipart/form-data'
+            xhr.setRequestHeader 'Content-Type', 'binary'
+            reader.onload = (e) ->
+              #xhr.sendAsBinary e.target.result
+              xhr.send e.target.result
+            reader.readAsBinaryString file
+            */
+      /*
+            xhr = new XMLHttpRequest    
+            xhr.open "post", "/pictures", true
+            self = @
+            xhr.onreadystatechange = () ->
+              if this.readyState == "200"
+                resp = JSON.parse this.responseText
+                self.trigger "newimage", resp
+                console.log resp
+            xhr.onerror = (e) -> log e
+            xhr.setRequestHeader('Content-Type', 'multipart/form-data');
+            xhr.setRequestHeader('X-File-Name', file.fileName);
+            xhr.setRequestHeader('X-File-Size', file.fileSize);
+            xhr.send file
+            */
+    });
+  };
   OfficeListPresenter.prototype.handleMapCenterChanged = function(cb) {
     if (cb == null) {
       cb = function() {};
@@ -610,7 +637,9 @@ OfficeListPresenter = (function() {
     if (d == null) {
       d = function() {};
     }
-    return server(["sessions", userInfo], d);
+    log("the user info is");
+    console.log(userInfo);
+    return jsonPost("/sessions", userInfo, d);
   };
   OfficeListPresenter.prototype.handleSignIn = function(values, d) {
     if (d == null) {
@@ -637,7 +666,7 @@ OfficeListPresenter = (function() {
     if (d == null) {
       d = function() {};
     }
-    return server("signout", __bind(function(err, result) {
+    return jsonPost("/signout", __bind(function(err, result) {
       if (err) {
         return alert("there was a problem signing out");
       }
@@ -649,7 +678,7 @@ OfficeListPresenter = (function() {
     if (d == null) {
       d = function() {};
     }
-    return get("questions/" + email + "/", __bind(function(err, res) {
+    return jsonPost("/questions/" + email + "/", __bind(function(err, res) {
       if (err) {
         return d();
       }
@@ -665,6 +694,7 @@ OfficeListPresenter = (function() {
     this.handleSignIn = __bind(this.handleSignIn, this);
     this.signIn = __bind(this.signIn, this);
     this.handleMapCenterChanged = __bind(this.handleMapCenterChanged, this);
+    this.handlePictures = __bind(this.handlePictures, this);
     this.handleAppYoutubeChange = __bind(this.handleAppYoutubeChange, this);
     this.handleAppValueChange = __bind(this.handleAppValueChange, this);
     this.handleAppNotesChange = __bind(this.handleAppNotesChange, this);
@@ -698,6 +728,7 @@ OfficeListPresenter = (function() {
     this.map.bind("youtubechange", this.handleAppYoutubeChange);
     this.map.bind("reload", this.handleReload);
     this.map.bind("mapcenterchanged", this.handleMapCenterChanged);
+    this.map.bind("picturesready", this.handlePictures);
     this.map.bind("signin", this.handleSignIn);
     this.map.bind("signout", this.handleSignOut);
     this.map.bind("emailentered", this.handleEmailEntered);
@@ -723,7 +754,7 @@ OfficeListPresenter = (function() {
     }
     this.signInView = new SignInView(this.map);
     log("who am i");
-    server("whoami", __bind(function(err, data) {
+    jsonPost("/whoami", __bind(function(err, data) {
       if (data.email) {
         return this.signInView.showSignedInAs(data.email);
       }
