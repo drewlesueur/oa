@@ -1,0 +1,19 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f00;
+  font-family: "Menlo", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Consolas", "Monaco";
+}
+input {
+  font-family: "Menlo", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Consolas", "Monaco";
+  font-size: 18pt;
+}
+.bar {
+  left: 300px;
+  position: absolute;
+  z-index: 500;
+}
