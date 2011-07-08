@@ -1,7 +1,7 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   define("gmap", function() {
-    var $, addListing, drews, getCenter, getDiv, getZoom, google, lookup, makeMap, map, nimble, self, setLatLng, _;
+    var $, addListing, bind, drews, extend, getCenter, getDiv, getZoom, google, log, lookup, m, makeMap, map, nimble, p, self, setLatLng, trigger, type, view, _;
     _ = require("underscore");
     $ = require("jquery");
     drews = require("drews-mixins");
@@ -9,6 +9,12 @@
     google = require("google");
     self = {};
     map = null;
+    log = _.log, extend = _.extend;
+    trigger = drews.trigger, bind = drews["on"], m = drews.meta, p = drews.polymorphic;
+    view = function(obj) {
+      return (m(obj)).view || ((m(obj)).view = {});
+    };
+    type = drews.metaMaker("type");
     makeMap = function(el) {
       var latLng, options;
       if (el == null) {
@@ -58,7 +64,7 @@
         d = function() {};
       }
       return drews.wait(10, function() {
-        var bubble, latlng, marker;
+        var bubble, latlng, listingView, marker;
         latlng = new google.maps.LatLng(listing.lat, listing.lng);
         marker = new google.maps.Marker({
           animation: google.maps.Animation.DROP,
@@ -68,9 +74,16 @@
         });
         marker.setMap(map);
         map.setCenter(latlng);
+        listingView = (m(listing)).view;
         bubble = new google.maps.InfoWindow({
-          content: listing.view.getBubbleContent(),
+          content: (p(listingView, "getBubbleContent"))(),
           zIndex: 999999
+        });
+        google.maps.event.addListener(marker, 'click', function() {
+          return trigger(map, "markerclick", listing);
+        });
+        google.maps.event.addListener(bubble, 'closeclick', function() {
+          return trigger(map, "bubbleclick", listing);
         });
         return {
           bubble: bubble,

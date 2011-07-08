@@ -9,6 +9,10 @@ define "gmap", () ->
   self = {}
   # mapifies a div
   map = null
+  {log, extend} = _
+  {trigger, "on":bind, meta:m, polymorphic:p} = drews
+  view = (obj) -> (m obj).view || (m obj).view = {}
+  type = drews.metaMaker "type"
   makeMap = (el=$ "<div id=\"map\"></div>") ->
     el.css
       width: "#{$(window).width()}px"
@@ -45,9 +49,17 @@ define "gmap", () ->
         icon: "http://office.the.tl/pin.png"
       marker.setMap map
       map.setCenter latlng
+      listingView = (m listing).view
       bubble = new google.maps.InfoWindow
-        content: listing.view.getBubbleContent()
+        #content: (type view listing).getBubbleContent listing
+        content: (p listingView, "getBubbleContent")()
         zIndex: 999999
+     
+      google.maps.event.addListener marker, 'click', () ->
+        trigger map, "markerclick", listing
+      google.maps.event.addListener bubble, 'closeclick', () ->
+        trigger map, "bubbleclick", listing
+ 
       return {bubble, marker}
 
   return {makeMap, getCenter, getZoom, setLatLng, getDiv,
