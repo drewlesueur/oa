@@ -1,7 +1,7 @@
 (function() {
   var $;
   define("office-atlas", function() {
-    var $, Listing, ListingView, band, barHeight, barView, bind, drews, extend, gmap, handleBubbleClick, handleMarkerClick, handleSubmit, init, log, m, map, nimble, p, stooges, trigger, type, view, _;
+    var $, Listing, ListingView, barHeight, barView, bind, drews, extend, gmap, handleBubbleClick, handleMarkerClick, handleSubmit, init, log, m, map, nimble, p, trigger, type, view, _;
     _ = require("underscore");
     $ = require("jquery");
     drews = require("drews-mixins");
@@ -18,33 +18,6 @@
       return (m(obj)).view || ((m(obj)).view = {});
     };
     type = drews.metaMaker("type");
-    band = {
-      name: "aterciopelados"
-    };
-    band.size = 2;
-    _.mixin({
-      "test": function(x) {
-        return "test" + x;
-      }
-    });
-    log((p("testersony", "s"))(4, -1));
-    stooges = [
-      {
-        name: 'curly',
-        age: 25
-      }, {
-        name: 'moe',
-        age: 21
-      }, {
-        name: 'larry',
-        age: 23
-      }
-    ];
-    log((p(stooges))("sortBy")(function(stooge) {
-      return stooge.age;
-    })(_.map)(function(s) {
-      return s.name === "larry";
-    })());
     handleSubmit = function(address) {
       return gmap.lookup(address, function(err, results) {
         var latlng, listing, listingView, listingViewInfo;
@@ -57,6 +30,9 @@
           lng: latlng.lng(),
           address: address
         };
+        log("listing obj lat and lng");
+        log(listing.lat);
+        log(listing.lng);
         listing = Listing.init(listing);
         listingView = ListingView.init(listing);
         return listingViewInfo = gmap.addListing(map, listing);
@@ -85,6 +61,7 @@
   $ = require("jquery");
   $(function() {
     var officePresenter;
-    return officePresenter = require("office-atlas");
+    officePresenter = require("office-atlas");
+    return officePresenter.init();
   });
 }).call(this);

@@ -15,14 +15,6 @@ define "office-atlas", () ->
   type = drews.metaMaker "type"
   # this is the "Presenter"
 
-  band = name: "aterciopelados"
-  band.size = 2
-  _.mixin "test": (x) -> return "test#{x}"
-  log (p "testersony", "s") 4, -1
-  stooges = [{name : 'curly', age : 25}, {name : 'moe', age : 21}, {name : 'larry', age : 23}]
-  log (p stooges)("sortBy")((stooge) -> stooge.age)(_.map)((s) -> s.name == "larry")()
-
-
 
   handleSubmit = (address) ->
     gmap.lookup address, (err, results) ->
@@ -33,6 +25,9 @@ define "office-atlas", () ->
         lat: latlng.lat()
         lng: latlng.lng()
         address: address
+      log "listing obj lat and lng"
+      log listing.lat
+      log listing.lng
       listing = Listing.init listing
       listingView = ListingView.init listing
       listingViewInfo = gmap.addListing map, listing
@@ -57,4 +52,4 @@ define "office-atlas", () ->
 $ = require "jquery"
 $ -> 
   officePresenter = require "office-atlas"
-  #officePresenter.init()
+  officePresenter.init()

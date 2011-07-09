@@ -9,6 +9,7 @@ define "listing", () ->
   exports = {} 
   exports.init = (listing) ->
     (m listing).type = exports
+    listing
   return exports
 
 define "listing-view", () ->

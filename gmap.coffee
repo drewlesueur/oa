@@ -41,7 +41,10 @@ define "gmap", () ->
         done status
   addListing = (map, listing, d=->) =>
     drews.wait 10, ->
+     
       latlng = new google.maps.LatLng listing.lat, listing.lng
+      log "the lat lng is"
+      log latlng
       marker = new google.maps.Marker
         animation: google.maps.Animation.DROP
         position: latlng

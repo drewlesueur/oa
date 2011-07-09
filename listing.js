@@ -11,7 +11,8 @@
     type = drews.metaMaker("type");
     exports = {};
     exports.init = function(listing) {
-      return (m(listing)).type = exports;
+      (m(listing)).type = exports;
+      return listing;
     };
     return exports;
   });

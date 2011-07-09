@@ -66,6 +66,8 @@
       return drews.wait(10, function() {
         var bubble, latlng, listingView, marker;
         latlng = new google.maps.LatLng(listing.lat, listing.lng);
+        log("the lat lng is");
+        log(latlng);
         marker = new google.maps.Marker({
           animation: google.maps.Animation.DROP,
           position: latlng,
