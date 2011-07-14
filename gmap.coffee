@@ -1,3 +1,4 @@
+__useLookup__ = true
 # gmap returns a function that
 # 'instantiates' a new googlemap wrapper object
 define "gmap", () ->
@@ -11,7 +12,6 @@ define "gmap", () ->
   map = null
   {log, extend} = _
   {trigger, "on":bind, meta:m, polymorphic:p} = drews
-  view = (obj) -> (m obj).view || (m obj).view = {}
   type = drews.metaMaker "type"
   makeMap = (el=$ "<div id=\"map\"></div>") ->
     el.css
@@ -23,7 +23,9 @@ define "gmap", () ->
       zoom:11
       center: latLng
       mapTypeId: google.maps.MapTypeId.ROADMAP
+    log "what"
     map = new google.maps.Map el[0], options
+    log "what2"
     return map
   getDiv = (map) -> map.getDiv()
   getCenter = (map) ->
@@ -52,17 +54,16 @@ define "gmap", () ->
         icon: "http://office.the.tl/pin.png"
       marker.setMap map
       map.setCenter latlng
-      listingView = (m listing).view
       bubble = new google.maps.InfoWindow
-        #content: (type view listing).getBubbleContent listing
-        content: (p listingView, "getBubbleContent")()
+        content: listing.view.getBubbleContent()
         zIndex: 999999
      
       google.maps.event.addListener marker, 'click', () ->
         trigger map, "markerclick", listing
       google.maps.event.addListener bubble, 'closeclick', () ->
         trigger map, "bubbleclick", listing
- 
+      listing.view.marker = marker
+      listing.view.bubble = bubble
       return {bubble, marker}
 
   return {makeMap, getCenter, getZoom, setLatLng, getDiv,
