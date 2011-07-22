@@ -29,7 +29,6 @@ define "map-page-presenter", () ->
           self.addListing listing, "save": false
 
       drews.bind self, "modelviewvalchanged", (model, prop, value) ->
-        alert "model view changed"
         model[prop] = value
         model.save()
 
@@ -45,12 +44,12 @@ define "map-page-presenter", () ->
           lat: latlng.lat()
           lng: latlng.lng()
           address: address
+        , editAddress: true
      addListing: (self, listing, options) ->
-        listing = Listing.init
-          lat: listing.lat
-          lng: listing.lng
-          address: listing.address
-        listingView = ListingView.init listing, triggeree: self
+        log "adding pre listing"
+        log listing
+        listing = Listing.init listing
+        listingView = ListingView.init listing, triggeree: self, editAddress: options?.editAddress
         listing.view = listingView
         listingViewInfo = self.map.addListing listing
         if options?.save isnt false
@@ -144,7 +143,9 @@ define "listing", () ->
       delete self2._type
       log "to save will be"
       log self2
-      severus.save "listings", self2, cb
+      severus.save "listings", self2, (error, _listing) ->
+        _.extend listing, _listing
+        cb error, listing
     remove: (self, cb) ->
       severus.remove "listings", self2._id, cb
     find: (args...) ->
@@ -170,7 +171,8 @@ define "listing-view", () ->
       formHtml = require "bubble-view" 
       form = EditableForm.init formHtml, listing, triggeree: self.triggeree
       self.form = form
-      self.form.makeEditable("address")
+      if options?.editAddress
+        self.form.makeEditable("address")
       form.el[0]
        
 
@@ -206,19 +208,27 @@ define "editable-form", () ->
         self.makeEditable(prop)
 
     makeEditable: (self, prop) ->
+      if self.editing
+        return
       el = self.el.find("[data-prop='#{prop}']")
       value = el.text()
       replacer = $ "<input type=\"text\" data-prop=\"#{prop}\" value=\"#{value}\">"
+
+      saveIt = () ->
+        self.editing = false
+        newValue = replacer.val()
+        el.html ""
+        el.text newValue 
+        drews.trigger self.triggeree, "modelviewvalchanged", self.model, prop, newValue
+
       replacer.bind "keyup", (e) ->
         if e.keyCode is 13
-          el.text replacer.val()
-          replacer.replaceWith el 
-          self.clickToMakeEditable(el)
-          log "triggering change on"
-          log self.triggeree
-          drews.trigger self.triggeree, "modelviewvalchanged", self.model, prop, value
+          saveIt()
+
+      replacer.bind "blur", (e) -> saveIt()
          
-      el.replaceWith replacer 
+      el.html replacer 
+      self.editing = true
       replacer[0].focus()
       replacer[0].select()
 

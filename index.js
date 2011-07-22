@@ -126,7 +126,6 @@
           });
         });
         __lookup(drews, "bind")(self, "modelviewvalchanged", function(model, prop, value) {
-          alert("model view changed");
           model[prop] = value;
           return __lookup(model, "save")();
         });
@@ -144,18 +143,19 @@
             lat: __lookup(latlng, "lat")(),
             lng: __lookup(latlng, "lng")(),
             address: address
+          }, {
+            editAddress: true
           });
         });
       },
       addListing: function(self, listing, options) {
         var listingView, listingViewInfo;
-        listing = __lookup(Listing, "init")({
-          lat: __lookup(listing, "lat"),
-          lng: __lookup(listing, "lng"),
-          address: __lookup(listing, "address")
-        });
+        log("adding pre listing");
+        log(listing);
+        listing = __lookup(Listing, "init")(listing);
         listingView = __lookup(ListingView, "init")(listing, {
-          triggeree: self
+          triggeree: self,
+          editAddress: options != null ? __lookup(options, "editAddress") : void 0
         });
         listing.view = listingView;
         listingViewInfo = __lookup(__lookup(self, "map"), "addListing")(listing);
@@ -275,7 +275,10 @@
         delete self2._type;
         log("to save will be");
         log(self2);
-        return __lookup(severus, "save")("listings", self2, cb);
+        return __lookup(severus, "save")("listings", self2, function(error, _listing) {
+          __lookup(_, "extend")(listing, _listing);
+          return cb(error, listing);
+        });
       },
       remove: function(self, cb) {
         return __lookup(severus, "remove")("listings", __lookup(self2, "_id"), cb);
@@ -313,7 +316,9 @@
           triggeree: __lookup(self, "triggeree")
         });
         self.form = form;
-        __lookup(__lookup(self, "form"), "makeEditable")("address");
+        if (typeof options !== "undefined" && options !== null ? __lookup(options, "editAddress") : void 0) {
+          __lookup(__lookup(self, "form"), "makeEditable")("address");
+        }
         return __lookup(__lookup(form, "el"), 0);
       }
     };
@@ -348,21 +353,31 @@
         });
       },
       makeEditable: function(self, prop) {
-        var el, replacer, value;
+        var el, replacer, saveIt, value;
+        if (__lookup(self, "editing")) {
+          return;
+        }
         el = __lookup(__lookup(self, "el"), "find")("[data-prop='" + prop + "']");
         value = __lookup(el, "text")();
         replacer = $("<input type=\"text\" data-prop=\"" + prop + "\" value=\"" + value + "\">");
+        saveIt = function() {
+          var newValue;
+          self.editing = false;
+          newValue = __lookup(replacer, "val")();
+          __lookup(el, "html")("");
+          __lookup(el, "text")(newValue);
+          return __lookup(drews, "trigger")(__lookup(self, "triggeree"), "modelviewvalchanged", __lookup(self, "model"), prop, newValue);
+        };
         __lookup(replacer, "bind")("keyup", function(e) {
           if (__lookup(e, "keyCode") === 13) {
-            __lookup(el, "text")(__lookup(replacer, "val")());
-            __lookup(replacer, "replaceWith")(el);
-            __lookup(self, "clickToMakeEditable")(el);
-            log("triggering change on");
-            log(__lookup(self, "triggeree"));
-            return __lookup(drews, "trigger")(__lookup(self, "triggeree"), "modelviewvalchanged", __lookup(self, "model"), prop, value);
+            return saveIt();
           }
         });
-        __lookup(el, "replaceWith")(replacer);
+        __lookup(replacer, "bind")("blur", function(e) {
+          return saveIt();
+        });
+        __lookup(el, "html")(replacer);
+        self.editing = true;
         __lookup(__lookup(replacer, 0), "focus")();
         return __lookup(__lookup(replacer, 0), "select")();
       }

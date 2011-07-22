@@ -8,7 +8,7 @@ body {
   background-color: #f00;
   font-family: "Menlo", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Consolas", "Monaco";
 }
-input {
+.search {
   font-family: "Menlo", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Consolas", "Monaco";
   font-size: 18pt;
 }
