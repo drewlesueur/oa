@@ -18,7 +18,6 @@ define "map-page-presenter", () ->
           _type: MapPagePresenter
       presenter.map = MapPageView.init()
       map = presenter.map
-      console.log presenter
       drews.on map, "submit", presenter.handleSubmit
       $(document.body).append presenter.map.getDiv()
       presenter
@@ -37,6 +36,7 @@ define "map-page-presenter", () ->
           lng: listing.lng
           address: listing.address
         listingView = ListingView.init listing
+        listing.view = listingView
         listingViewInfo = presenter.map.addListing listing
 
        
@@ -68,8 +68,6 @@ define "map-page-view", () ->
       bar = SearchBarView.init
         triggerer: mapPageView
 
-      console.log "this is a test"
-      console.log bar.el
       el.append bar.el
 
       mapPageView.bar = bar
@@ -100,14 +98,18 @@ define "map-page-view", () ->
         icon: "http://office.the.tl/pin.png"
       marker.setMap self.map
       self.map.setCenter latlng
+
+      bubbleContent = listing.view.getBubbleContent()
       bubble = new google.maps.InfoWindow
-        content: listing.view.getBubbleContent()
-        zIndex: 999999
+        content: bubbleContent
+        position: latlng
      
       google.maps.event.addListener marker, 'click', () ->
-        trigger map, "markerclick", listing
+        #drews.trigger self.map, "markerclick", listing
+        bubble.open self.map
+
       google.maps.event.addListener bubble, 'closeclick', () ->
-        trigger map, "bubbleclick", listing
+        drews.trigger self.map, "bubbleclick", listing
       listing.view.marker = marker
       listing.view.bubble = bubble
       return {bubble, marker}
@@ -120,11 +122,72 @@ define "listing", () ->
        listing
 
 define "listing-view", () ->
+  EditableForm = require "editable-form"
   ListingView = 
     init: (listing) ->
-      listingView = 
+      self = 
         _type: ListingView
         model: listing
+    getBubbleContent: (self) ->
+      listing = self.model
+      if self.bubbleContent
+        return self.bubbleContent
+      model = self.model
+
+        #TODO:  make the formHtml an option
+      formHtml = require "bubble-view" 
+      form = EditableForm.init formHtml, listing
+      self.form = form
+      self.form.makeEditable("address")
+      form.el[0]
+       
+
+
+       
+
+# use a self or a big closure
+define "editable-form", () ->
+
+  EditableForm = 
+    init: (html, values) ->
+      self = 
+        _type: EditableForm
+        el : $ html
+        _: "Editable form"
+      
+      htmlValues = self.el.find("[data-prop]")
+      log "the values are"
+      log htmlValues
+      drews.eachArray htmlValues, (el) ->
+        log el
+        el = $(el)
+        key = el.attr "data-prop"
+        el.text values[key] or "[#{key}]"
+
+      self.clickToMakeEditable(self.el.find(".editable"))
+      self
+      
+    clickToMakeEditable : (self, els) ->
+      els.bind "click", (e) ->
+        prop = $(this).attr "data-prop"
+        self.makeEditable(prop)
+
+    makeEditable: (self, prop) ->
+      el = self.el.find("[data-prop='#{prop}']")
+      log el
+      value = el.text()
+      log "the value is #{value}."
+      replacer = $ "<input type=\"text\" data-prop=\"#{prop}\" value=\"#{value}\">"
+      replacer.bind "keyup", (e) ->
+        if e.keyCode is 13
+          el.text replacer.val()
+          replacer.replaceWith el 
+          self.clickToMakeEditable(el)
+         
+      log replacer
+      el.replaceWith replacer 
+
+ 
 
 
 define "search-bar-view", () ->

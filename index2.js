@@ -1,4 +1,5 @@
 (function() {
+  var $, __useLookup__;
   var __lookup = function (obj, property, dontBindObj, childObj, debug) {
     __slice = Array.prototype.slice
     if (property == "call" && "__original" in obj) {
@@ -92,27 +93,66 @@
     } else {
       return;
     }
-  };
-  define("barview", function() {
-    var $, bind, drews, init, nimble, trigger, _;
+  }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty;
+  __useLookup__ = true;
+  define("office-atlas", function() {
+    var $, Listing, ListingView, barHeight, barView, bind, drews, extend, gmap, handleBubbleClick, handleMarkerClick, handleSubmit, init, log, m, map, nimble, p, trigger, type, _;
     _ = require("underscore");
     $ = require("jquery");
     drews = require("drews-mixins");
     nimble = require("nimble");
-    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on");
-    init = function() {
-      var el, form;
-      form = {};
-      el = $("<div class=\"bar\">\n  <form class=\"search-form\">\n    <input class=\"search\" placeholder=\"Add address\" />\n  </form>\n</div>");
-      form.el = el;
-      __lookup(el, "submit")(function(e) {
-        __lookup(e, "preventDefault")();
-        return trigger(form, "submit", __lookup(__lookup(el, "find")(".search"), "val")());
+    gmap = require("gmap");
+    barView = require("barview");
+    Listing = require("listing");
+    ListingView = require("listing-view");
+    log = __lookup(_, "log"), extend = __lookup(_, "extend");
+    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on"), m = __lookup(drews, "meta"), p = __lookup(drews, "polymorphic");
+    barHeight = 50;
+    map = null;
+    type = __lookup(drews, "metaMaker")("type");
+    handleSubmit = function(address) {
+      return __lookup(gmap, "lookup")(address, function(err, results) {
+        var latlng, listing, listingView, listingViewInfo;
+        if (err) {
+          return log("ERROR looking up address");
+        }
+        latlng = __lookup(__lookup(__lookup(results, 0), "geometry"), "location");
+        listing = __lookup(Listing, "init")({
+          lat: __lookup(latlng, "lat")(),
+          lng: __lookup(latlng, "lng")(),
+          address: address
+        });
+        listingView = __lookup(ListingView, "init")(listing);
+        return listingViewInfo = __lookup(gmap, "addListing")(map, listing);
       });
-      return form;
+    };
+    handleMarkerClick = function(listing) {
+      return alert("listing marker clicked");
+    };
+    handleBubbleClick = function(listing) {
+      return alert("listing bubble clicked");
+    };
+    init = function() {
+      var bar;
+      map = __lookup(gmap, "makeMap")();
+      bar = __lookup(barView, "init")();
+      bind(map, "markerclick", handleMarkerClick);
+      bind(map, "bubbleclick", handleBubbleClick);
+      bind(bar, "submit", handleSubmit);
+      log("the map is");
+      log(map);
+      __lookup($(__lookup(document, "body")), "append")(__lookup(gmap, "getDiv")(map));
+      __lookup($(__lookup(document, "body")), "append")(__lookup(bar, "el"));
+      return log("yo");
     };
     return {
       init: init
     };
+  });
+  $ = require("jquery");
+  $(function() {
+    var officePresenter;
+    officePresenter = require("office-atlas");
+    return __lookup(officePresenter, "init")();
   });
 }).call(this);
