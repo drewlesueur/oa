@@ -1,5 +1,5 @@
 (function() {
-  var $, drews, log, nimble, _, __useLookup__;
+  var $, drews, log, nimble, severus, _, __useLookup__;
   var __lookup = function (obj, property, dontBindObj, childObj, debug) {
     __slice = Array.prototype.slice
     if (property == "call" && "__original" in obj) {
@@ -99,6 +99,9 @@
   _ = require("underscore");
   drews = require("drews-mixins");
   nimble = require("nimble");
+  severus = require("severus");
+  severus.db = "officeatlas_dev";
+  drews.bind = __lookup(drews, "on");
   log = __lookup(drews, "log");
   define("map-page-presenter", function() {
     var Listing, ListingView, MapPagePresenter, MapPageView;
@@ -107,40 +110,58 @@
     ListingView = require("listing-view");
     return MapPagePresenter = {
       init: function() {
-        var map, presenter;
-        presenter = {
+        var map, self;
+        self = {
           _type: MapPagePresenter
         };
-        presenter.map = __lookup(MapPageView, "init")();
-        map = __lookup(presenter, "map");
-        __lookup(drews, "on")(map, "submit", __lookup(presenter, "handleSubmit"));
-        __lookup($(__lookup(document, "body")), "append")(__lookup(__lookup(presenter, "map"), "getDiv")());
-        return presenter;
+        self.map = __lookup(MapPageView, "init")();
+        map = __lookup(self, "map");
+        __lookup(drews, "on")(map, "submit", __lookup(self, "handleSubmit"));
+        __lookup($(__lookup(document, "body")), "append")(__lookup(__lookup(self, "map"), "getDiv")());
+        __lookup(Listing, "find")(function(error, listings) {
+          return __lookup(_, "each")(listings, function(listing) {
+            return __lookup(self, "addListing")(listing, {
+              "save": false
+            });
+          });
+        });
+        __lookup(drews, "bind")(self, "modelviewvalchanged", function(model, prop, value) {
+          alert("model view changed");
+          model[prop] = value;
+          return __lookup(model, "save")();
+        });
+        return self;
       },
-      handleSubmit: function(presenter, address) {
-        return __lookup(__lookup(presenter, "map"), "lookup")(address, function(err, results) {
+      name: "MapPagePresenter",
+      handleSubmit: function(self, address) {
+        return __lookup(__lookup(self, "map"), "lookup")(address, function(err, results) {
           var latlng;
           if (err) {
             return log("ERROR looking up address");
           }
           latlng = __lookup(__lookup(__lookup(results, 0), "geometry"), "location");
-          return __lookup(presenter, "addListing")({
+          return __lookup(self, "addListing")({
             lat: __lookup(latlng, "lat")(),
             lng: __lookup(latlng, "lng")(),
             address: address
           });
         });
       },
-      addListing: function(presenter, listing) {
+      addListing: function(self, listing, options) {
         var listingView, listingViewInfo;
         listing = __lookup(Listing, "init")({
           lat: __lookup(listing, "lat"),
           lng: __lookup(listing, "lng"),
           address: __lookup(listing, "address")
         });
-        listingView = __lookup(ListingView, "init")(listing);
+        listingView = __lookup(ListingView, "init")(listing, {
+          triggeree: self
+        });
         listing.view = listingView;
-        return listingViewInfo = __lookup(__lookup(presenter, "map"), "addListing")(listing);
+        listingViewInfo = __lookup(__lookup(self, "map"), "addListing")(listing);
+        if ((options != null ? __lookup(options, "save") : void 0) !== false) {
+          return __lookup(listing, "save")();
+        }
       }
     };
   });
@@ -149,7 +170,7 @@
     SearchBarView = require("search-bar-view");
     return MapPageView = {
       init: function(el) {
-        var bar, latLng, map, mapPageView, options;
+        var bar, latLng, map, options, self;
         if (el == null) {
           el = $("<div class=\"map\"></div>", options);
         }
@@ -168,17 +189,17 @@
           mapTypeId: __lookup(__lookup(__lookup(google, "maps"), "MapTypeId"), "ROADMAP")
         };
         map = new google.maps.Map(__lookup(el, 0), options);
-        mapPageView = {
+        self = {
           _type: MapPageView,
           map: map,
           el: el
         };
         bar = __lookup(SearchBarView, "init")({
-          triggerer: mapPageView
+          triggeree: self
         });
         __lookup(el, "append")(__lookup(bar, "el"));
-        mapPageView.bar = bar;
-        return mapPageView;
+        self.bar = bar;
+        return self;
       },
       getDiv: function(self) {
         return __lookup(__lookup(self, "map"), "getDiv")();
@@ -205,10 +226,10 @@
           }
         }, this));
       }, this),
-      addListing: __bind(function(self, listing, d) {
+      addListing: __bind(function(self, listing, cb) {
         var bubble, bubbleContent, latlng, marker;
-        if (d == null) {
-          d = function() {};
+        if (cb == null) {
+          cb = function() {};
         }
         latlng = new google.maps.LatLng(__lookup(listing, "lat"), __lookup(listing, "lng"));
         marker = new google.maps.Marker({
@@ -245,6 +266,24 @@
       init: function(listing) {
         listing._type = Listing;
         return listing;
+      },
+      name: "Listing",
+      save: function(self, cb) {
+        var self2;
+        self2 = __lookup(_, "clone")(self);
+        delete self2.view;
+        delete self2._type;
+        log("to save will be");
+        log(self2);
+        return __lookup(severus, "save")("listings", self2, cb);
+      },
+      remove: function(self, cb) {
+        return __lookup(severus, "remove")("listings", __lookup(self2, "_id"), cb);
+      },
+      find: function() {
+        var args;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        return __lookup(severus, "find").apply(severus, ["listings"].concat(__slice.call(args)));
       }
     };
   });
@@ -252,13 +291,16 @@
     var EditableForm, ListingView;
     EditableForm = require("editable-form");
     return ListingView = {
-      init: function(listing) {
+      init: function(listing, options) {
         var self;
-        return self = {
+        self = {
           _type: ListingView,
           model: listing
         };
+        self.triggeree = (options != null ? __lookup(options, "triggeree") : void 0) || self;
+        return self;
       },
+      name: "Listing View",
       getBubbleContent: function(self) {
         var form, formHtml, listing, model;
         listing = __lookup(self, "model");
@@ -267,7 +309,9 @@
         }
         model = __lookup(self, "model");
         formHtml = require("bubble-view");
-        form = __lookup(EditableForm, "init")(formHtml, listing);
+        form = __lookup(EditableForm, "init")(formHtml, listing, {
+          triggeree: __lookup(self, "triggeree")
+        });
         self.form = form;
         __lookup(__lookup(self, "form"), "makeEditable")("address");
         return __lookup(__lookup(form, "el"), 0);
@@ -277,26 +321,25 @@
   define("editable-form", function() {
     var EditableForm;
     return EditableForm = {
-      init: function(html, values) {
+      init: function(html, model, options) {
         var htmlValues, self;
         self = {
           _type: EditableForm,
           el: $(html),
-          _: "Editable form"
+          model: model
         };
+        self.triggeree = (options != null ? __lookup(options, "triggeree") : void 0) || self;
         htmlValues = __lookup(__lookup(self, "el"), "find")("[data-prop]");
-        log("the values are");
-        log(htmlValues);
         __lookup(drews, "eachArray")(htmlValues, function(el) {
           var key;
-          log(el);
           el = $(el);
           key = __lookup(el, "attr")("data-prop");
-          return __lookup(el, "text")(__lookup(values, key) || ("[" + key + "]"));
+          return __lookup(el, "text")(__lookup(model, key) || ("[" + key + "]"));
         });
         __lookup(self, "clickToMakeEditable")(__lookup(__lookup(self, "el"), "find")(".editable"));
         return self;
       },
+      name: "Editable form",
       clickToMakeEditable: function(self, els) {
         return __lookup(els, "bind")("click", function(e) {
           var prop;
@@ -307,19 +350,21 @@
       makeEditable: function(self, prop) {
         var el, replacer, value;
         el = __lookup(__lookup(self, "el"), "find")("[data-prop='" + prop + "']");
-        log(el);
         value = __lookup(el, "text")();
-        log("the value is " + value + ".");
         replacer = $("<input type=\"text\" data-prop=\"" + prop + "\" value=\"" + value + "\">");
         __lookup(replacer, "bind")("keyup", function(e) {
           if (__lookup(e, "keyCode") === 13) {
             __lookup(el, "text")(__lookup(replacer, "val")());
             __lookup(replacer, "replaceWith")(el);
-            return __lookup(self, "clickToMakeEditable")(el);
+            __lookup(self, "clickToMakeEditable")(el);
+            log("triggering change on");
+            log(__lookup(self, "triggeree"));
+            return __lookup(drews, "trigger")(__lookup(self, "triggeree"), "modelviewvalchanged", __lookup(self, "model"), prop, value);
           }
         });
-        log(replacer);
-        return __lookup(el, "replaceWith")(replacer);
+        __lookup(el, "replaceWith")(replacer);
+        __lookup(__lookup(replacer, 0), "focus")();
+        return __lookup(__lookup(replacer, 0), "select")();
       }
     };
   });
@@ -327,7 +372,7 @@
     var SearchBarView;
     return SearchBarView = {
       init: function(options) {
-        var bar, triggerer;
+        var bar, triggeree;
         if (typeof el === "undefined" || el === null) {
           el = $("<div class=\"search-bar-view\">\n  <form class=\"search-form\">\n    <input class=\"search\" placeholder=\"\" />\n  </form>\n</div>");
         }
@@ -340,15 +385,18 @@
           _type: SearchBarView,
           el: el
         };
-        __lookup(options, "triggerer") || (options.triggerer = bar);
-        triggerer = __lookup(options, "triggerer");
+        if (options != null) {
+          __lookup(options, "triggeree") || (options.triggeree = bar);
+        }
+        triggeree = __lookup(options, "triggeree");
         __lookup(el, "submit")(function(e) {
           __lookup(e, "preventDefault")();
-          __lookup(drews, "trigger")(triggerer, "submit", __lookup(__lookup(el, "find")(".search"), "val")());
+          __lookup(drews, "trigger")(triggeree, "submit", __lookup(__lookup(el, "find")(".search"), "val")());
           return __lookup(__lookup(el, "find")(".search"), "val")("");
         });
         return bar;
-      }
+      },
+      name: "SearchBarView"
     };
   });
 }).call(this);

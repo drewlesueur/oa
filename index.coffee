@@ -4,6 +4,9 @@ $ = require "jquery"
 _ = require "underscore"
 drews = require "drews-mixins"
 nimble = require "nimble"
+severus = require "severus"
+severus.db = "officeatlas_dev"
+drews.bind = drews.on
 {log} = drews
 
 # this is the presenter
@@ -14,30 +17,44 @@ define "map-page-presenter", () ->
   ListingView = require "listing-view"
   MapPagePresenter  =
     init: () ->
-      presenter =
-          _type: MapPagePresenter
-      presenter.map = MapPageView.init()
-      map = presenter.map
-      drews.on map, "submit", presenter.handleSubmit
-      $(document.body).append presenter.map.getDiv()
-      presenter
-    handleSubmit: (presenter, address) ->
-      presenter.map.lookup address, (err, results) ->
+      self =
+        _type: MapPagePresenter
+      self.map = MapPageView.init()
+      map = self.map
+      drews.on map, "submit", self.handleSubmit
+      $(document.body).append self.map.getDiv()
+
+      Listing.find (error, listings) ->
+        _.each listings, (listing) ->
+          self.addListing listing, "save": false
+
+      drews.bind self, "modelviewvalchanged", (model, prop, value) ->
+        alert "model view changed"
+        model[prop] = value
+        model.save()
+
+      self
+
+    name: "MapPagePresenter" 
+    handleSubmit: (self, address) ->
+      self.map.lookup address, (err, results) ->
         if err then return log "ERROR looking up address"
         latlng = results[0].geometry.location
         #TODO: trigger and bind on listing
-        presenter.addListing 
+        self.addListing 
           lat: latlng.lat()
           lng: latlng.lng()
           address: address
-     addListing: (presenter, listing) ->
+     addListing: (self, listing, options) ->
         listing = Listing.init
           lat: listing.lat
           lng: listing.lng
           address: listing.address
-        listingView = ListingView.init listing
+        listingView = ListingView.init listing, triggeree: self
         listing.view = listingView
-        listingViewInfo = presenter.map.addListing listing
+        listingViewInfo = self.map.addListing listing
+        if options?.save isnt false
+          listing.save()
 
        
 
@@ -60,18 +77,19 @@ define "map-page-view", () ->
         center: latLng
         mapTypeId: google.maps.MapTypeId.ROADMAP
       map = new google.maps.Map el[0], options
-      mapPageView =
+      self =
         _type: MapPageView
         map: map
         el : el
 
-      bar = SearchBarView.init
-        triggerer: mapPageView
+      bar = SearchBarView.init triggeree: self
 
       el.append bar.el
 
-      mapPageView.bar = bar
-      mapPageView
+      self.bar = bar
+      
+
+      self
 
     getDiv: (self) ->
      self.map.getDiv()
@@ -88,7 +106,7 @@ define "map-page-view", () ->
           done null, results
         else
           done status
-    addListing : (self, listing, d=->) =>
+    addListing : (self, listing, cb=->) =>
      
       latlng = new google.maps.LatLng listing.lat, listing.lng
       marker = new google.maps.Marker
@@ -98,7 +116,6 @@ define "map-page-view", () ->
         icon: "http://office.the.tl/pin.png"
       marker.setMap self.map
       self.map.setCenter latlng
-
       bubbleContent = listing.view.getBubbleContent()
       bubble = new google.maps.InfoWindow
         content: bubbleContent
@@ -120,14 +137,29 @@ define "listing", () ->
     init: (listing) ->
        listing._type = Listing
        listing
+    name: "Listing"
+    save: (self, cb) ->
+      self2 = _.clone(self)
+      delete self2.view
+      delete self2._type
+      log "to save will be"
+      log self2
+      severus.save "listings", self2, cb
+    remove: (self, cb) ->
+      severus.remove "listings", self2._id, cb
+    find: (args...) ->
+      severus.find "listings", args...
 
 define "listing-view", () ->
   EditableForm = require "editable-form"
   ListingView = 
-    init: (listing) ->
+    init: (listing, options) ->
       self = 
         _type: ListingView
         model: listing
+      self.triggeree = options?.triggeree or self
+      self
+    name: "Listing View"
     getBubbleContent: (self) ->
       listing = self.model
       if self.bubbleContent
@@ -136,7 +168,7 @@ define "listing-view", () ->
 
         #TODO:  make the formHtml an option
       formHtml = require "bubble-view" 
-      form = EditableForm.init formHtml, listing
+      form = EditableForm.init formHtml, listing, triggeree: self.triggeree
       self.form = form
       self.form.makeEditable("address")
       form.el[0]
@@ -146,27 +178,28 @@ define "listing-view", () ->
        
 
 # use a self or a big closure
+# what is space
 define "editable-form", () ->
 
   EditableForm = 
-    init: (html, values) ->
+    init: (html, model, options) ->
       self = 
         _type: EditableForm
         el : $ html
-        _: "Editable form"
+        model: model
+
+      self.triggeree = options?.triggeree or self
       
       htmlValues = self.el.find("[data-prop]")
-      log "the values are"
-      log htmlValues
       drews.eachArray htmlValues, (el) ->
-        log el
         el = $(el)
         key = el.attr "data-prop"
-        el.text values[key] or "[#{key}]"
+        el.text model[key] or "[#{key}]"
 
       self.clickToMakeEditable(self.el.find(".editable"))
       self
       
+    name: "Editable form"
     clickToMakeEditable : (self, els) ->
       els.bind "click", (e) ->
         prop = $(this).attr "data-prop"
@@ -174,18 +207,21 @@ define "editable-form", () ->
 
     makeEditable: (self, prop) ->
       el = self.el.find("[data-prop='#{prop}']")
-      log el
       value = el.text()
-      log "the value is #{value}."
       replacer = $ "<input type=\"text\" data-prop=\"#{prop}\" value=\"#{value}\">"
       replacer.bind "keyup", (e) ->
         if e.keyCode is 13
           el.text replacer.val()
           replacer.replaceWith el 
           self.clickToMakeEditable(el)
+          log "triggering change on"
+          log self.triggeree
+          drews.trigger self.triggeree, "modelviewvalchanged", self.model, prop, value
          
-      log replacer
       el.replaceWith replacer 
+      replacer[0].focus()
+      replacer[0].select()
+
 
  
 
@@ -193,7 +229,6 @@ define "editable-form", () ->
 define "search-bar-view", () ->
   SearchBarView = 
     init: (options) ->
-    
       el ?= $ """
         <div class="search-bar-view">
           <form class="search-form">
@@ -209,14 +244,14 @@ define "search-bar-view", () ->
       bar =
         _type: SearchBarView
         el: el
-      options.triggerer ||= bar
-      {triggerer} = options
+      options?.triggeree ||= bar
+      {triggeree} = options
       el.submit (e) ->
         e.preventDefault()
-        drews.trigger triggerer, "submit", el.find(".search").val()
+        drews.trigger triggeree, "submit", el.find(".search").val()
         el.find(".search").val("")
-
       return bar
+    name: "SearchBarView"
     
 
 
