@@ -1,6 +1,6 @@
 (function() {
   var __useLookup__;
-  var __lookup = function (obj, property, dontBindObj, childObj, debug) {
+  var __get = function (obj, property, dontBindObj, childObj, debug) {
     __slice = Array.prototype.slice
     if (property == "call" && "__original" in obj) {
       return function(){
@@ -66,9 +66,9 @@
         ret = thissedFunction
       }
       return ret
-    } else if ("_lookup" in obj) {
+    } else if ("_get" in obj) {
       var usedObj = childObj || obj
-      var ret = (obj._lookup(usedObj, property))
+      var ret = (obj._get(usedObj, property))
       if (!isUndefined(ret)) {
         return ret  
       }
@@ -76,13 +76,14 @@
     var type = obj._type
     var hasTypeObj = (typeof type === "object") || (typeof type === "function");
     if (hasTypeObj) {
-      ret = __lookup(type, property, true, obj);
+      var usedObj = childObj || obj;
+      ret = __get(type, property, true, usedObj);
       if (!dontBindObj && isFunction(ret)) { //is don't bind obj needed here
         var fn = function () {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-          args.unshift(obj)
-          return ret.apply(obj, args)
+          args.unshift(usedObj)
+          return ret.apply(usedObj, args)
         }
         fn.__original = ret
         return fn
@@ -93,7 +94,16 @@
     } else {
       return;
     }
-  }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty;
+  }, __set = function (obj, prop, val, meta) {
+    if (meta === void 0) // if meta is undefined
+      meta = true
+    var set = __get(obj, "_set");
+    if (meta && set && typeof obj == "object") {
+      set(prop, val);
+    } else {
+      obj[prop] = val;  
+    }
+  };
   __useLookup__ = true;
   define("listing", function() {
     var $, bind, drews, each, exports, log, m, nimble, trigger, type, _;
@@ -101,16 +111,16 @@
     $ = require("jquery");
     drews = require("drews-mixins");
     nimble = require("nimble");
-    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on"), log = __lookup(drews, "log"), m = __lookup(drews, "meta");
+    trigger = __get(drews, "trigger"), bind = __get(drews, "on"), log = __get(drews, "log"), m = __get(drews, "meta");
     drews;
-    each = __lookup(_, "each");
-    type = __lookup(drews, "metaMaker")("type");
+    each = __get(_, "each");
+    type = __get(drews, "metaMaker")("type");
     exports = {};
-    exports.init = function(listing) {
-      listing._type = exports;
+    __set(exports, "init", function(listing) {
+      __set(listing, "_type", exports);
       return listing;
-    };
-    exports.jsonExclusions = ["view", "__mid"];
+    });
+    __set(exports, "jsonExclusions", ["view", "__mid"]);
     return exports;
   });
   define("listing-view", function() {
@@ -120,32 +130,32 @@
     drews = require("drews-mixins");
     nimble = require("nimble");
     youtubeParser = require("youtube-parser");
-    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on"), log = __lookup(drews, "log");
+    trigger = __get(drews, "trigger"), bind = __get(drews, "on"), log = __get(drews, "log");
     exports = {};
-    exports.getBubbleContent = function(listingView) {
+    __set(exports, "getBubbleContent", function(listingView) {
       var bigImage, content, height, image, listing, str, width, youtube;
-      listing = __lookup(listingView, "model");
-      youtube = __lookup(youtubeParser, "init")(__lookup(listing, "youtube"));
-      bigImage = __lookup(youtube, "bigImage");
-      width = __lookup(youtube, "width");
-      height = __lookup(youtube, "height");
+      listing = __get(listingView, "model");
+      youtube = __get(youtubeParser, "init")(__get(listing, "youtube"));
+      bigImage = __get(youtube, "bigImage");
+      width = __get(youtube, "width");
+      height = __get(youtube, "height");
       if (bigImage && width) {
         image = "<img class=\"thumbnail\" src=\"" + bigImage + "\" style=\"width:" + width + "px;\;height:" + height + "px; position: relative\" />";
       } else {
         image = "";
       }
-      str = "  <div style=\"position: relative;\" class=\"bubble-wrapper\" data-cid=\"" + "\" data-id=\"" + "\">\n  <div class=\"bubble-position\"></div>\n  " + __lookup(listing, "address") + "\n  <div class=\"youtube\">\n   " + image + "\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + __lookup(listing, "notes") + "\n  </div>\n  <div class=\"squareFeet\">\n    " + __lookup(listing, "squareFeet") + "\n  </div>\n  <div class=\"price\">\n    " + __lookup(listing, "price") + "\n  </div>\n</div>";
+      str = "  <div style=\"position: relative;\" class=\"bubble-wrapper\" data-cid=\"" + "\" data-id=\"" + "\">\n  <div class=\"bubble-position\"></div>\n  " + __get(listing, "address") + "\n  <div class=\"youtube\">\n   " + image + "\n  </div>\n  <br />\n  <div class=\"notes\">\n    " + __get(listing, "notes") + "\n  </div>\n  <div class=\"squareFeet\">\n    " + __get(listing, "squareFeet") + "\n  </div>\n  <div class=\"price\">\n    " + __get(listing, "price") + "\n  </div>\n</div>";
       content = $(str);
-      __lookup(__lookup(content, "find")("img.thumbnail"), "click")(function() {
+      __get(__get(content, "find")("img.thumbnail"), "click")(function() {
         return trigger(map, "youtubeimageclick", listing);
       });
-      return listingView.bubbleContent = __lookup(content, 0);
-    };
-    exports.init = function(listing) {
-      return listing.view = {
+      return __set(listingView, "bubbleContent", __get(content, 0));
+    });
+    __set(exports, "init", function(listing) {
+      return __set(listing, "view", {
         _type: exports
-      };
-    };
+      });
+    });
     return exports;
   });
 }).call(this);

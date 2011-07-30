@@ -1,4 +1,4 @@
-__useLookup__ = true
+__useGetSet__ = true
 
 $ = require "jquery"
 _ = require "underscore"
@@ -15,6 +15,7 @@ define "map-page-presenter", () ->
   MapPageView = require "map-page-view"
   Listing = require "listing"
   ListingView = require "listing-view"
+  #class presenter
   MapPagePresenter  =
     init: () ->
       self =
@@ -30,7 +31,6 @@ define "map-page-presenter", () ->
 
       drews.bind self, "modelviewvalchanged", (model, prop, value) ->
         model[prop] = value
-        model.save()
 
       self
 
@@ -132,18 +132,34 @@ define "map-page-view", () ->
 
 
 define "listing", () ->
+  #class Listing
   Listing =
-    init: (listing) ->
-       listing._type = Listing
-       listing
+    init: (attrs) ->
+       if attrs._type == Listing
+         listing = attrs
+         listing
+       else
+         listing =
+           _type: Listing
+           attrs: attrs
+           nonAttrs: {}
+
+         listing
     name: "Listing"
+    notInAttrs: ["view"]
+    _set: (self, prop, value) ->
+      if prop in self.notInAttrs #has
+        __set(self, prop, value, false) #actually save it to the listing
+        log self
+      else
+        self.attrs[prop] = value 
+        self.save()
+
+    _get: (self, prop) ->
+      self.attrs[prop]
+
     save: (self, cb) ->
-      self2 = _.clone(self)
-      delete self2.view
-      delete self2._type
-      log "to save will be"
-      log self2
-      severus.save "listings", self2, (error, _listing) ->
+      severus.save "listings", self.attrs, (error, _listing) ->
         _.extend listing, _listing
         cb error, listing
     remove: (self, cb) ->

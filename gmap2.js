@@ -1,6 +1,6 @@
 (function() {
   var __useLookup__;
-  var __lookup = function (obj, property, dontBindObj, childObj, debug) {
+  var __get = function (obj, property, dontBindObj, childObj, debug) {
     __slice = Array.prototype.slice
     if (property == "call" && "__original" in obj) {
       return function(){
@@ -66,9 +66,9 @@
         ret = thissedFunction
       }
       return ret
-    } else if ("_lookup" in obj) {
+    } else if ("_get" in obj) {
       var usedObj = childObj || obj
-      var ret = (obj._lookup(usedObj, property))
+      var ret = (obj._get(usedObj, property))
       if (!isUndefined(ret)) {
         return ret  
       }
@@ -76,13 +76,14 @@
     var type = obj._type
     var hasTypeObj = (typeof type === "object") || (typeof type === "function");
     if (hasTypeObj) {
-      ret = __lookup(type, property, true, obj);
+      var usedObj = childObj || obj;
+      ret = __get(type, property, true, usedObj);
       if (!dontBindObj && isFunction(ret)) { //is don't bind obj needed here
         var fn = function () {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-          args.unshift(obj)
-          return ret.apply(obj, args)
+          args.unshift(usedObj)
+          return ret.apply(usedObj, args)
         }
         fn.__original = ret
         return fn
@@ -93,7 +94,16 @@
     } else {
       return;
     }
-  }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __set = function (obj, prop, val, meta) {
+    if (meta === void 0) // if meta is undefined
+      meta = true
+    var set = __get(obj, "_set");
+    if (meta && set && typeof obj == "object") {
+      set(prop, val);
+    } else {
+      obj[prop] = val;  
+    }
+  };
   __useLookup__ = true;
   define("gmap", function() {
     var $, addListing, bind, drews, extend, getCenter, getDiv, getZoom, google, log, lookup, m, makeMap, map, nimble, p, self, setLatLng, trigger, _;
@@ -104,48 +114,48 @@
     google = require("google");
     self = {};
     map = null;
-    log = __lookup(_, "log"), extend = __lookup(_, "extend");
-    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on"), m = __lookup(drews, "meta"), p = __lookup(drews, "polymorphic");
+    log = __get(_, "log"), extend = __get(_, "extend");
+    trigger = __get(drews, "trigger"), bind = __get(drews, "on"), m = __get(drews, "meta"), p = __get(drews, "polymorphic");
     makeMap = function(el) {
       var latLng, options;
       if (el == null) {
         el = $("<div id=\"map\"></div>");
       }
-      __lookup(el, "css")({
-        width: "" + (__lookup($(window), "width")()) + "px",
-        height: "" + (__lookup($(window), "height")()) + "px",
+      __get(el, "css")({
+        width: "" + (__get($(window), "width")()) + "px",
+        height: "" + (__get($(window), "height")()) + "px",
         position: 'absolute'
       });
       latLng = new google.maps.LatLng(33.4222685, -111.8226402);
       options = {
         zoom: 11,
         center: latLng,
-        mapTypeId: __lookup(__lookup(__lookup(google, "maps"), "MapTypeId"), "ROADMAP")
+        mapTypeId: __get(__get(__get(google, "maps"), "MapTypeId"), "ROADMAP")
       };
       log("what");
-      map = new google.maps.Map(__lookup(el, 0), options);
+      map = new google.maps.Map(__get(el, 0), options);
       log("what2");
       return map;
     };
     getDiv = function(map) {
-      return __lookup(map, "getDiv")();
+      return __get(map, "getDiv")();
     };
     getCenter = function(map) {
-      return __lookup(map, "getCenter")();
+      return __get(map, "getCenter")();
     };
     getZoom = function(map) {
-      return __lookup(map, "getZoom")();
+      return __get(map, "getZoom")();
     };
     setLatLng = __bind(function(map, lat, lng) {
-      return __lookup(map, "setCenter")(new google.maps.LatLng(lat, lng));
+      return __get(map, "setCenter")(new google.maps.LatLng(lat, lng));
     }, this);
     lookup = __bind(function(address, done) {
       var geocoder;
       geocoder = new google.maps.Geocoder();
-      return __lookup(geocoder, "geocode")({
+      return __get(geocoder, "geocode")({
         address: address
       }, __bind(function(results, status) {
-        if (status === __lookup(__lookup(__lookup(google, "maps"), "GeocoderStatus"), "OK")) {
+        if (status === __get(__get(__get(google, "maps"), "GeocoderStatus"), "OK")) {
           return done(null, results);
         } else {
           return done(status);
@@ -156,31 +166,31 @@
       if (d == null) {
         d = function() {};
       }
-      return __lookup(drews, "wait")(10, function() {
+      return __get(drews, "wait")(10, function() {
         var bubble, latlng, marker;
-        latlng = new google.maps.LatLng(__lookup(listing, "lat"), __lookup(listing, "lng"));
+        latlng = new google.maps.LatLng(__get(listing, "lat"), __get(listing, "lng"));
         log("the lat lng is");
         log(latlng);
         marker = new google.maps.Marker({
-          animation: __lookup(__lookup(__lookup(google, "maps"), "Animation"), "DROP"),
+          animation: __get(__get(__get(google, "maps"), "Animation"), "DROP"),
           position: latlng,
-          title: __lookup(listing, "address"),
+          title: __get(listing, "address"),
           icon: "http://office.the.tl/pin.png"
         });
-        __lookup(marker, "setMap")(map);
-        __lookup(map, "setCenter")(latlng);
+        __get(marker, "setMap")(map);
+        __get(map, "setCenter")(latlng);
         bubble = new google.maps.InfoWindow({
-          content: __lookup(__lookup(listing, "view"), "getBubbleContent")(),
+          content: __get(__get(listing, "view"), "getBubbleContent")(),
           zIndex: 999999
         });
-        __lookup(__lookup(__lookup(google, "maps"), "event"), "addListener")(marker, 'click', function() {
+        __get(__get(__get(google, "maps"), "event"), "addListener")(marker, 'click', function() {
           return trigger(map, "markerclick", listing);
         });
-        __lookup(__lookup(__lookup(google, "maps"), "event"), "addListener")(bubble, 'closeclick', function() {
+        __get(__get(__get(google, "maps"), "event"), "addListener")(bubble, 'closeclick', function() {
           return trigger(map, "bubbleclick", listing);
         });
-        listing.view.marker = marker;
-        listing.view.bubble = bubble;
+        __set(__get(listing, "view"), "marker", marker);
+        __set(__get(listing, "view"), "bubble", bubble);
         return {
           bubble: bubble,
           marker: marker

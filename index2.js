@@ -1,6 +1,6 @@
 (function() {
   var $, __useLookup__;
-  var __lookup = function (obj, property, dontBindObj, childObj, debug) {
+  var __get = function (obj, property, dontBindObj, childObj, debug) {
     __slice = Array.prototype.slice
     if (property == "call" && "__original" in obj) {
       return function(){
@@ -66,9 +66,9 @@
         ret = thissedFunction
       }
       return ret
-    } else if ("_lookup" in obj) {
+    } else if ("_get" in obj) {
       var usedObj = childObj || obj
-      var ret = (obj._lookup(usedObj, property))
+      var ret = (obj._get(usedObj, property))
       if (!isUndefined(ret)) {
         return ret  
       }
@@ -76,13 +76,14 @@
     var type = obj._type
     var hasTypeObj = (typeof type === "object") || (typeof type === "function");
     if (hasTypeObj) {
-      ret = __lookup(type, property, true, obj);
+      var usedObj = childObj || obj;
+      ret = __get(type, property, true, usedObj);
       if (!dontBindObj && isFunction(ret)) { //is don't bind obj needed here
         var fn = function () {
           var args;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-          args.unshift(obj)
-          return ret.apply(obj, args)
+          args.unshift(usedObj)
+          return ret.apply(usedObj, args)
         }
         fn.__original = ret
         return fn
@@ -93,7 +94,7 @@
     } else {
       return;
     }
-  }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty;
+  };
   __useLookup__ = true;
   define("office-atlas", function() {
     var $, Listing, ListingView, barHeight, barView, bind, drews, extend, gmap, handleBubbleClick, handleMarkerClick, handleSubmit, init, log, m, map, nimble, p, trigger, type, _;
@@ -105,25 +106,25 @@
     barView = require("barview");
     Listing = require("listing");
     ListingView = require("listing-view");
-    log = __lookup(_, "log"), extend = __lookup(_, "extend");
-    trigger = __lookup(drews, "trigger"), bind = __lookup(drews, "on"), m = __lookup(drews, "meta"), p = __lookup(drews, "polymorphic");
+    log = __get(_, "log"), extend = __get(_, "extend");
+    trigger = __get(drews, "trigger"), bind = __get(drews, "on"), m = __get(drews, "meta"), p = __get(drews, "polymorphic");
     barHeight = 50;
     map = null;
-    type = __lookup(drews, "metaMaker")("type");
+    type = __get(drews, "metaMaker")("type");
     handleSubmit = function(address) {
-      return __lookup(gmap, "lookup")(address, function(err, results) {
+      return __get(gmap, "lookup")(address, function(err, results) {
         var latlng, listing, listingView, listingViewInfo;
         if (err) {
           return log("ERROR looking up address");
         }
-        latlng = __lookup(__lookup(__lookup(results, 0), "geometry"), "location");
-        listing = __lookup(Listing, "init")({
-          lat: __lookup(latlng, "lat")(),
-          lng: __lookup(latlng, "lng")(),
+        latlng = __get(__get(__get(results, 0), "geometry"), "location");
+        listing = __get(Listing, "init")({
+          lat: __get(latlng, "lat")(),
+          lng: __get(latlng, "lng")(),
           address: address
         });
-        listingView = __lookup(ListingView, "init")(listing);
-        return listingViewInfo = __lookup(gmap, "addListing")(map, listing);
+        listingView = __get(ListingView, "init")(listing);
+        return listingViewInfo = __get(gmap, "addListing")(map, listing);
       });
     };
     handleMarkerClick = function(listing) {
@@ -134,15 +135,15 @@
     };
     init = function() {
       var bar;
-      map = __lookup(gmap, "makeMap")();
-      bar = __lookup(barView, "init")();
+      map = __get(gmap, "makeMap")();
+      bar = __get(barView, "init")();
       bind(map, "markerclick", handleMarkerClick);
       bind(map, "bubbleclick", handleBubbleClick);
       bind(bar, "submit", handleSubmit);
       log("the map is");
       log(map);
-      __lookup($(__lookup(document, "body")), "append")(__lookup(gmap, "getDiv")(map));
-      __lookup($(__lookup(document, "body")), "append")(__lookup(bar, "el"));
+      __get($(__get(document, "body")), "append")(__get(gmap, "getDiv")(map));
+      __get($(__get(document, "body")), "append")(__get(bar, "el"));
       return log("yo");
     };
     return {
@@ -153,6 +154,6 @@
   $(function() {
     var officePresenter;
     officePresenter = require("office-atlas");
-    return __lookup(officePresenter, "init")();
+    return __get(officePresenter, "init")();
   });
 }).call(this);
