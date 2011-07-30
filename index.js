@@ -306,9 +306,14 @@
         return __get(__get(self, "attrs"), prop);
       },
       save: function(self, cb) {
+        if (cb == null) {
+          cb = function() {};
+        }
+        log("saving");
+        log(__get(self, "attrs"));
         return __get(severus, "save")("listings", __get(self, "attrs"), function(error, _listing) {
-          __get(_, "extend")(listing, _listing);
-          return cb(error, listing);
+          __get(_, "extend")(__get(self, "attrs"), _listing);
+          return cb(error, self);
         });
       },
       remove: function(self, cb) {
@@ -336,14 +341,18 @@
       },
       name: "Listing View",
       getBubbleContent: function(self) {
-        var form, formHtml, listing, model;
+        var BubbleView, bubbleView, form, listing, model;
         listing = __get(self, "model");
         if (__get(self, "bubbleContent")) {
           return __get(self, "bubbleContent");
         }
         model = __get(self, "model");
-        formHtml = require("bubble-view");
-        form = __get(EditableForm, "init")(formHtml, listing, {
+        BubbleView = require("bubble-view");
+        bubbleView = __get(BubbleView, "init")({
+          triggeree: __get(self, "triggeree"),
+          model: __get(self, "model")
+        });
+        form = __get(EditableForm, "init")(__get(bubbleView, "el"), listing, {
           triggeree: __get(self, "triggeree")
         });
         __set(self, "form", form);

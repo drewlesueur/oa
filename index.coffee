@@ -132,6 +132,7 @@ define "map-page-view", () ->
 
 
 define "listing", () ->
+  #closures for classes vs my _type for classes
   #class Listing
   Listing =
     init: (attrs) ->
@@ -158,10 +159,12 @@ define "listing", () ->
     _get: (self, prop) ->
       self.attrs[prop]
 
-    save: (self, cb) ->
+    save: (self, cb=->) ->
+      log "saving"
+      log self.attrs
       severus.save "listings", self.attrs, (error, _listing) ->
-        _.extend listing, _listing
-        cb error, listing
+        _.extend self.attrs, _listing
+        cb error, self
     remove: (self, cb) ->
       severus.remove "listings", self2._id, cb
     find: (args...) ->
@@ -178,14 +181,18 @@ define "listing-view", () ->
       self
     name: "Listing View"
     getBubbleContent: (self) ->
+      #TODO: cache this
       listing = self.model
       if self.bubbleContent
         return self.bubbleContent
       model = self.model
 
         #TODO:  make the formHtml an option
-      formHtml = require "bubble-view" 
-      form = EditableForm.init formHtml, listing, triggeree: self.triggeree
+      BubbleView = require "bubble-view" 
+      bubbleView = BubbleView.init 
+        triggeree: self.triggeree
+        model: self.model
+      form = EditableForm.init bubbleView.el, listing, triggeree: self.triggeree
       self.form = form
       if options?.editAddress
         self.form.makeEditable("address")
