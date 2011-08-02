@@ -115,11 +115,12 @@
           _type: BubbleView,
           options: options
         };
-        el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a class=\"add-images\" href=\"#\">Add images</a>\n  \n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n</div>");
+        el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a class=\"add-images\" href=\"#\">Add images</a>\n  \n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"images\">\n  \n  </div>\n</div>");
         __get(el, "css")({
           width: "300px",
           height: "300px"
         });
+        __get(el, "find")("");
         __get(__get(el, "find")(".add-image-area"), "hide")();
         __get(__get(el, "find")(".add-images"), "click")(function(e) {
           __get(e, "preventDefault")();
