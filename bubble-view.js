@@ -7,17 +7,37 @@
   define("file-droppable", function() {
     var fileDroppable;
     return fileDroppable = function(el) {
-      return el.bind("dragover", function(e) {
-        return e.preventDefault();
+      el.bind("dragover", function(e) {
+        e.preventDefault();
+        return e.stopPropagation();
+      });
+      el.bind("dragenter", function(e) {
+        return false;
+      });
+      return el.bind("drop", function(e) {
+        var files;
+        e.preventDefault();
+        e.stopPropagation();
+        e = e.originalEvent;
+        console.log(e);
+        files = e.dataTransfer.files;
+        console.log("original files are");
+        console.log(files);
+        if (files.length > 0) {
+          return el.trigger("filedroppablefiles", [files]);
+        } else {
+          return el.trigger("filedroppableurls", e.dataTransfer.getData('text'));
+        }
       });
     };
   });
   define("bubble-view", function() {
-    var bubbleViewMaker, drews, fileBoxMaker, _;
+    var bubbleViewMaker, drews, fileBoxMaker, fileDroppable, _;
     window[1];
     _ = require("underscore");
     drews = require("drews-mixins");
     fileBoxMaker = require("filebox");
+    fileDroppable = require("file-droppable");
     return bubbleViewMaker = function(options) {
       var addImage, addImages, el, filebox, handleAddImages, handleSaveImages, self, triggeree;
       triggeree = options.triggeree;
@@ -29,6 +49,15 @@
         options: options
       };
       el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n</div>");
+      fileDroppable(el);
+      el.bind("filedroppablefiles", function(e, files) {
+        console.log(files);
+        return filebox.uploadFiles(files);
+      });
+      el.bind("filedroppableurls", function(e, url) {
+        console.log(url);
+        return addImage(url);
+      });
       el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars());
       el.css({
         width: "" + config.width + "px",

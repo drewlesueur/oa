@@ -6,7 +6,23 @@ define "file-droppable", () ->
  fileDroppable = (el) -> 
    el.bind "dragover", (e) ->
      e.preventDefault()
-   el.
+     e.stopPropagation()
+   el.bind "dragenter", (e) -> #ie?
+     return false
+   el.bind "drop", (e) ->
+     e.preventDefault()
+     e.stopPropagation()
+     e = e.originalEvent #jQuery stuff
+     console.log e
+     files = e.dataTransfer.files
+     console.log "original files are"
+     console.log files
+     if files.length > 0
+       el.trigger "filedroppablefiles", [files]
+     else
+       el.trigger "filedroppableurls", e.dataTransfer.getData('text')
+
+     
 
 define "bubble-view", () ->
   #class BubbleView
@@ -14,6 +30,7 @@ define "bubble-view", () ->
   _ = require "underscore"
   drews = require "drews-mixins"
   fileBoxMaker = require "filebox"
+  fileDroppable = require "file-droppable"
   bubbleViewMaker = (options) ->
     {triggeree} = options
     filebox = fileBoxMaker()
@@ -34,6 +51,14 @@ define "bubble-view", () ->
         </div>
       </div>
     """
+    fileDroppable el
+    el.bind "filedroppablefiles", (e, files) ->
+      console.log files
+      filebox.uploadFiles files
+    el.bind "filedroppableurls", (e, url) ->
+      console.log url
+      addImage url
+
     el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars())
     el.css
       width: "#{config.width}px"
