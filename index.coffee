@@ -20,7 +20,6 @@ define "map-page-presenter", () ->
     self = {}
     map = mapPageViewMaker()
     self.map = map
-    drews.on map, "submit", self.handleSubmit
     $(document.body).append self.map.getDiv()
     handleSubmit = (address) ->
       map.lookup address, (err, results) ->
@@ -32,6 +31,7 @@ define "map-page-presenter", () ->
           address: address
         , editAddress: true
     self.handleSubmit = handleSubmit
+    drews.on map, "submit", self.handleSubmit
     addListing = (listing, options) ->
       log "adding pre listing"
       log listing
@@ -263,6 +263,8 @@ define "search-bar-view", () ->
     {triggeree} = options
     el.submit (e) ->
       e.preventDefault()
+      console.log "the triggeree is "
+      console.log triggeree
       drews.trigger triggeree, "submit", el.find(".search").val()
       el.find(".search").val("")
     self

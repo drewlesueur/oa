@@ -19,7 +19,6 @@
       self = {};
       map = mapPageViewMaker();
       self.map = map;
-      drews.on(map, "submit", self.handleSubmit);
       $(document.body).append(self.map.getDiv());
       handleSubmit = function(address) {
         return map.lookup(address, function(err, results) {
@@ -38,6 +37,7 @@
         });
       };
       self.handleSubmit = handleSubmit;
+      drews.on(map, "submit", self.handleSubmit);
       addListing = function(listing, options) {
         var listingView, listingViewInfo;
         log("adding pre listing");
@@ -329,6 +329,8 @@
       triggeree = options.triggeree;
       el.submit(function(e) {
         e.preventDefault();
+        console.log("the triggeree is ");
+        console.log(triggeree);
         drews.trigger(triggeree, "submit", el.find(".search").val());
         return el.find(".search").val("");
       });

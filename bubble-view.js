@@ -6,7 +6,11 @@
   };
   define("file-droppable", function() {
     var fileDroppable;
-    return fileDroppable = function(el) {};
+    return fileDroppable = function(el) {
+      return el.bind("dragover", function(e) {
+        return e.preventDefault();
+      });
+    };
   });
   define("bubble-view", function() {
     var bubbleViewMaker, drews, fileBoxMaker, _;

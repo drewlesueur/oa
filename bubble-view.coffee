@@ -4,6 +4,10 @@ config =
 
 define "file-droppable", () ->
  fileDroppable = (el) -> 
+   el.bind "dragover", (e) ->
+     e.preventDefault()
+   el.
+
 define "bubble-view", () ->
   #class BubbleView
   window[1] # because I have to have a get for my set
