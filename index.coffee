@@ -33,24 +33,29 @@ define "map-page-presenter", () ->
     self.handleSubmit = handleSubmit
     drews.on map, "submit", self.handleSubmit
     addListing = (listing, options) ->
-      log "adding pre listing"
-      log listing
       listing = listingMaker listing
-      log "just created the listing and it's"
-      log listing
       listingView = listingViewMaker listing, triggeree: self, editAddress: options?.editAddress
       listing.view = listingView
       listingViewInfo = map.addListing listing
+      listing.presenter = self
       if options?.save isnt false
         listing.save()
+      listing
     self.addListing = addListing
-
-    listingMaker.find (error, listings) ->
-      _.each listings, (listing) ->
-        self.addListing listing, "save": false
+    listings = []
+    self.listings = listings
+    listingMaker.find (error, _listings) ->
+      listings = _listings
+      _.each listings, (listing, index) ->
+        listings[index] = addListing listing, "save": false
 
     drews.bind self, "modelviewvalchanged", (model, prop, value) ->
       model.set prop, value
+
+    drews.bind map, "bubbleopen", (_listing) ->
+      _.each listings, (listing) ->
+        if listing != _listing
+          listing.view.bubble.close()
     self
 
   
@@ -115,7 +120,9 @@ define "map-page-view", () ->
      
       google.maps.event.addListener marker, 'click', () ->
         #drews.trigger map, "markerclick", listing
+        drews.trigger self, "bubbleopen", listing 
         bubble.open map
+        
 
       google.maps.event.addListener bubble, 'closeclick', () ->
         drews.trigger map, "bubbleclick", listing
@@ -136,7 +143,6 @@ define "listing", () ->
     self.attrs = attrs
     _.extend self, attrs
     set = (prop, value) ->
-      console.log "setting: #{prop} to #{value}"
 
       attrs[prop] = value 
       self[prop] = value # for convenience
@@ -182,6 +188,8 @@ define "listing-view", () ->
         form.makeEditable("address")
       form.el[0]
     self.getBubbleContent = getBubbleContent
+    closeBubble = () ->
+      
     self
 
 
@@ -189,8 +197,6 @@ define "listing-view", () ->
 # what is space
 define "editable-form", () ->
   editableFormMaker = (html, model, options) ->
-    console.log "the html is"
-    console.log html
 
     self = 
       el : $ html

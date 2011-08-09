@@ -15,7 +15,7 @@
     listingMaker = require("listing");
     listingViewMaker = require("listing-view");
     return mapPagePresenterMaker = function() {
-      var addListing, handleSubmit, map, self;
+      var addListing, handleSubmit, listings, map, self;
       self = {};
       map = mapPageViewMaker();
       self.map = map;
@@ -40,31 +40,39 @@
       drews.on(map, "submit", self.handleSubmit);
       addListing = function(listing, options) {
         var listingView, listingViewInfo;
-        log("adding pre listing");
-        log(listing);
         listing = listingMaker(listing);
-        log("just created the listing and it's");
-        log(listing);
         listingView = listingViewMaker(listing, {
           triggeree: self,
           editAddress: options != null ? options.editAddress : void 0
         });
         listing.view = listingView;
         listingViewInfo = map.addListing(listing);
+        listing.presenter = self;
         if ((options != null ? options.save : void 0) !== false) {
-          return listing.save();
+          listing.save();
         }
+        return listing;
       };
       self.addListing = addListing;
-      listingMaker.find(function(error, listings) {
-        return _.each(listings, function(listing) {
-          return self.addListing(listing, {
+      listings = [];
+      self.listings = listings;
+      listingMaker.find(function(error, _listings) {
+        listings = _listings;
+        return _.each(listings, function(listing, index) {
+          return listings[index] = addListing(listing, {
             "save": false
           });
         });
       });
       drews.bind(self, "modelviewvalchanged", function(model, prop, value) {
         return model.set(prop, value);
+      });
+      drews.bind(map, "bubbleopen", function(_listing) {
+        return _.each(listings, function(listing) {
+          if (listing !== _listing) {
+            return listing.view.bubble.close();
+          }
+        });
       });
       return self;
     };
@@ -151,6 +159,7 @@
           position: latlng
         });
         google.maps.event.addListener(marker, 'click', function() {
+          drews.trigger(self, "bubbleopen", listing);
           return bubble.open(map);
         });
         google.maps.event.addListener(bubble, 'closeclick', function() {
@@ -180,7 +189,6 @@
       self.attrs = attrs;
       _.extend(self, attrs);
       set = function(prop, value) {
-        console.log("setting: " + prop + " to " + value);
         attrs[prop] = value;
         self[prop] = value;
         return save();
@@ -214,7 +222,7 @@
     var editableFormMaker, listingViewMaker;
     editableFormMaker = require("editable-form");
     return listingViewMaker = function(listing, options) {
-      var getBubbleContent, model, self, triggeree;
+      var closeBubble, getBubbleContent, model, self, triggeree;
       model = listing;
       self = {};
       self.model = model;
@@ -240,6 +248,7 @@
         return form.el[0];
       };
       self.getBubbleContent = getBubbleContent;
+      closeBubble = function() {};
       return self;
     };
   });
@@ -247,8 +256,6 @@
     var editableFormMaker;
     return editableFormMaker = function(html, model, options) {
       var clickToMakeEditable, el, htmlValues, makeEditable, self, triggeree;
-      console.log("the html is");
-      console.log(html);
       self = {
         el: $(html),
         model: model
