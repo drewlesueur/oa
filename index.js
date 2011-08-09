@@ -64,7 +64,7 @@
         });
       });
       drews.bind(self, "modelviewvalchanged", function(model, prop, value) {
-        return model.set("prop", value);
+        return model.set(prop, value);
       });
       return self;
     };
@@ -179,29 +179,30 @@
       self = {};
       self.attrs = attrs;
       _.extend(self, attrs);
-      set = function(self, prop, value) {
+      set = function(prop, value) {
+        console.log("setting: " + prop + " to " + value);
         attrs[prop] = value;
         self[prop] = value;
-        return self.save();
+        return save();
       };
       self.set = set;
       get = function(self, prop, value) {
         return self.attrs[prop];
       };
-      save = function(self, cb) {
+      save = function(cb) {
         if (cb == null) {
           cb = function() {};
         }
         log("saving");
-        log(self.attrs);
-        return severus.save("listings", self.attrs, function(error, _listing) {
-          _.extend(self.attrs, _listing);
+        log(attrs);
+        return severus.save("listings", attrs, function(error, _listing) {
+          _.extend(attrs, _listing);
           return cb(error, self);
         });
       };
       self.save = save;
-      remove = function(self, cb) {
-        return severus.remove("listings", self2._id, cb);
+      remove = function(cb) {
+        return severus.remove("listings", attrs._id, cb);
       };
       self.remove = remove;
       return self;
@@ -245,18 +246,22 @@
   define("editable-form", function() {
     var editableFormMaker;
     return editableFormMaker = function(html, model, options) {
-      var clickToMakeEditable, htmlValues, makeEditable, self;
+      var clickToMakeEditable, el, htmlValues, makeEditable, self, triggeree;
+      console.log("the html is");
+      console.log(html);
       self = {
         el: $(html),
         model: model
       };
+      el = self.el;
       self.triggeree = (options != null ? options.triggeree : void 0) || self;
-      htmlValues = self.el.find("[data-prop]");
-      drews.eachArray(htmlValues, function(el) {
+      triggeree = self.triggeree;
+      htmlValues = el.find("[data-prop]");
+      drews.eachArray(htmlValues, function(_el) {
         var key;
-        el = $(el);
-        key = el.attr("data-prop");
-        return el.text(model[key] || ("[" + key + "]"));
+        _el = $(_el);
+        key = _el.attr("data-prop");
+        return _el.text(model[key] || ("[" + key + "]"));
       });
       clickToMakeEditable = function(els) {
         return els.bind("click", function(e) {
@@ -268,20 +273,23 @@
       self.clickToMakeEditable = clickToMakeEditable;
       clickToMakeEditable(el.find(".editable"));
       makeEditable = function(prop) {
-        var el, replacer, saveIt, value;
+        var replacer, saveIt, value, _el;
         if (self.editing) {
           return;
         }
-        el = self.el.find("[data-prop='" + prop + "']");
-        value = el.text();
+        _el = el.find("[data-prop='" + prop + "']");
+        value = _el.text();
         replacer = $("<input type=\"text\" data-prop=\"" + prop + "\" value=\"" + value + "\">");
         saveIt = function() {
           var newValue;
           self.editing = false;
           newValue = replacer.val();
-          el.html("");
-          el.text(newValue);
-          return drews.trigger(self.triggeree, "modelviewvalchanged", self.model, prop, newValue);
+          _el.html("");
+          _el.text(newValue);
+          console.log("triggering a save of " + prop + ", " + newValue + ".");
+          console.log("the model is");
+          console.log(model);
+          return drews.trigger(triggeree, "modelviewvalchanged", model, prop, newValue);
         };
         replacer.bind("keyup", function(e) {
           if (e.keyCode === 13) {
@@ -291,7 +299,7 @@
         replacer.bind("blur", function(e) {
           return saveIt();
         });
-        el.html(replacer);
+        _el.html(replacer);
         self.editing = true;
         replacer[0].focus();
         return replacer[0].select();

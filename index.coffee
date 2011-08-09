@@ -50,7 +50,7 @@ define "map-page-presenter", () ->
         self.addListing listing, "save": false
 
     drews.bind self, "modelviewvalchanged", (model, prop, value) ->
-      model.set "prop", value
+      model.set prop, value
     self
 
   
@@ -135,24 +135,26 @@ define "listing", () ->
     self = {}
     self.attrs = attrs
     _.extend self, attrs
-    set = (self, prop, value) ->
+    set = (prop, value) ->
+      console.log "setting: #{prop} to #{value}"
+
       attrs[prop] = value 
       self[prop] = value # for convenience
-      self.save()
+      save()
     self.set = set
 
     get = (self, prop, value) ->
       return self.attrs[prop]
 
-    save = (self, cb=->) ->
+    save = (cb=->) ->
       log "saving"
-      log self.attrs
-      severus.save "listings", self.attrs, (error, _listing) ->
-        _.extend self.attrs, _listing
+      log attrs
+      severus.save "listings", attrs, (error, _listing) ->
+        _.extend attrs, _listing
         cb error, self
     self.save = save
-    remove = (self, cb) ->
-      severus.remove "listings", self2._id, cb
+    remove = (cb) ->
+      severus.remove "listings", attrs._id, cb
     self.remove = remove
     self
   listingMaker.find = find
@@ -187,17 +189,21 @@ define "listing-view", () ->
 # what is space
 define "editable-form", () ->
   editableFormMaker = (html, model, options) ->
+    console.log "the html is"
+    console.log html
+
     self = 
       el : $ html
       model: model
-
+    el = self.el
     self.triggeree = options?.triggeree or self
+    triggeree = self.triggeree
     
-    htmlValues = self.el.find("[data-prop]")
-    drews.eachArray htmlValues, (el) ->
-      el = $(el)
-      key = el.attr "data-prop"
-      el.text model[key] or "[#{key}]"
+    htmlValues = el.find("[data-prop]")
+    drews.eachArray htmlValues, (_el) ->
+      _el = $(_el)
+      key = _el.attr "data-prop"
+      _el.text model[key] or "[#{key}]"
 
     clickToMakeEditable = (els) ->
       els.bind "click", (e) ->
@@ -210,16 +216,19 @@ define "editable-form", () ->
     makeEditable = (prop) ->
       if self.editing
         return
-      el = self.el.find("[data-prop='#{prop}']")
-      value = el.text()
+      _el = el.find("[data-prop='#{prop}']")
+      value = _el.text()
       replacer = $ "<input type=\"text\" data-prop=\"#{prop}\" value=\"#{value}\">"
 
       saveIt = () ->
         self.editing = false
         newValue = replacer.val()
-        el.html ""
-        el.text newValue 
-        drews.trigger self.triggeree, "modelviewvalchanged", self.model, prop, newValue
+        _el.html ""
+        _el.text newValue 
+        console.log "triggering a save of #{prop}, #{newValue}."
+        console.log "the model is"
+        console.log model
+        drews.trigger triggeree, "modelviewvalchanged", model, prop, newValue
 
       replacer.bind "keyup", (e) ->
         if e.keyCode is 13
@@ -227,7 +236,7 @@ define "editable-form", () ->
 
       replacer.bind "blur", (e) -> saveIt()
          
-      el.html replacer 
+      _el.html replacer 
       self.editing = true
       replacer[0].focus()
       replacer[0].select()
