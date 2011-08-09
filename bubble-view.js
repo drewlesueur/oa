@@ -24,17 +24,17 @@
         return self.handleSaveImages();
       });
       self.el = el;
-      self;
       handleAddImages = function() {
         return self.el.find(".add-image-area").show();
       };
-      return handleSaveImages = function() {
+      handleSaveImages = function() {
         var images;
         images = el.find(".images").val().split("\n");
         console.log("the options are");
         console.log(self.options);
         return drews.trigger(self.options.triggeree, "modelviewvalchanged", self.options.model, "images", images);
       };
+      return self;
     };
   });
 }).call(this);

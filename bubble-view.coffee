@@ -30,7 +30,6 @@ define "bubble-view", () ->
        e.preventDefault()
        self.handleSaveImages()
     self.el = el
-    self
     handleAddImages = () ->
       self.el.find(".add-image-area").show()
     handleSaveImages = () ->
@@ -38,6 +37,7 @@ define "bubble-view", () ->
       console.log "the options are"
       console.log self.options
       drews.trigger self.options.triggeree, "modelviewvalchanged", self.options.model, "images", images
+    self
 
 
 

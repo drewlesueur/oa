@@ -32,10 +32,12 @@ define "map-page-presenter", () ->
           address: address
         , editAddress: true
     self.handleSubmit = handleSubmit
-    addListing: (listing, options) ->
+    addListing = (listing, options) ->
       log "adding pre listing"
       log listing
       listing = listingMaker listing
+      log "just created the listing and it's"
+      log listing
       listingView = listingViewMaker listing, triggeree: self, editAddress: options?.editAddress
       listing.view = listingView
       listingViewInfo = map.addListing listing
@@ -48,8 +50,7 @@ define "map-page-presenter", () ->
         self.addListing listing, "save": false
 
     drews.bind self, "modelviewvalchanged", (model, prop, value) ->
-      model[prop] = value
-
+      model.set "prop", value
     self
 
   
@@ -128,14 +129,20 @@ define "map-page-view", () ->
 define "listing", () ->
   #closures for classes vs my _type for classes
   #class Listing
-  listingMaker = () ->
+  find = (args...) ->
+    severus.find "listings", args...
+  listingMaker = (attrs) ->
     self = {}
-    attrs = {}
     self.attrs = attrs
+    _.extend self, attrs
     set = (self, prop, value) ->
       attrs[prop] = value 
-      self[prop] = value
+      self[prop] = value # for convenience
       self.save()
+    self.set = set
+
+    get = (self, prop, value) ->
+      return self.attrs[prop]
 
     save = (self, cb=->) ->
       log "saving"
@@ -147,10 +154,9 @@ define "listing", () ->
     remove = (self, cb) ->
       severus.remove "listings", self2._id, cb
     self.remove = remove
-    find = (args...) ->
-      severus.find "listings", args...
-    self.find = find
     self
+  listingMaker.find = find
+  listingMaker
 
 define "listing-view", () ->
   editableFormMaker = require "editable-form"
@@ -182,7 +188,6 @@ define "listing-view", () ->
 define "editable-form", () ->
   editableFormMaker = (html, model, options) ->
     self = 
-      _type: EditableForm
       el : $ html
       model: model
 

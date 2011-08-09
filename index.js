@@ -15,7 +15,7 @@
     listingMaker = require("listing");
     listingViewMaker = require("listing-view");
     return mapPagePresenterMaker = function() {
-      var handleSubmit, map, self;
+      var addListing, handleSubmit, map, self;
       self = {};
       map = mapPageViewMaker();
       self.map = map;
@@ -38,23 +38,23 @@
         });
       };
       self.handleSubmit = handleSubmit;
-      ({
-        addListing: function(listing, options) {
-          var listingView, listingViewInfo;
-          log("adding pre listing");
-          log(listing);
-          listing = listingMaker(listing);
-          listingView = listingViewMaker(listing, {
-            triggeree: self,
-            editAddress: options != null ? options.editAddress : void 0
-          });
-          listing.view = listingView;
-          listingViewInfo = map.addListing(listing);
-          if ((options != null ? options.save : void 0) !== false) {
-            return listing.save();
-          }
+      addListing = function(listing, options) {
+        var listingView, listingViewInfo;
+        log("adding pre listing");
+        log(listing);
+        listing = listingMaker(listing);
+        log("just created the listing and it's");
+        log(listing);
+        listingView = listingViewMaker(listing, {
+          triggeree: self,
+          editAddress: options != null ? options.editAddress : void 0
+        });
+        listing.view = listingView;
+        listingViewInfo = map.addListing(listing);
+        if ((options != null ? options.save : void 0) !== false) {
+          return listing.save();
         }
-      });
+      };
       self.addListing = addListing;
       listingMaker.find(function(error, listings) {
         return _.each(listings, function(listing) {
@@ -64,7 +64,7 @@
         });
       });
       drews.bind(self, "modelviewvalchanged", function(model, prop, value) {
-        return model[prop] = value;
+        return model.set("prop", value);
       });
       return self;
     };
@@ -168,16 +168,25 @@
     };
   });
   define("listing", function() {
-    var listingMaker;
-    return listingMaker = function() {
-      var attrs, find, remove, save, self, set;
+    var find, listingMaker;
+    find = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return severus.find.apply(severus, ["listings"].concat(__slice.call(args)));
+    };
+    listingMaker = function(attrs) {
+      var get, remove, save, self, set;
       self = {};
-      attrs = {};
       self.attrs = attrs;
+      _.extend(self, attrs);
       set = function(self, prop, value) {
         attrs[prop] = value;
         self[prop] = value;
         return self.save();
+      };
+      self.set = set;
+      get = function(self, prop, value) {
+        return self.attrs[prop];
       };
       save = function(self, cb) {
         if (cb == null) {
@@ -195,14 +204,10 @@
         return severus.remove("listings", self2._id, cb);
       };
       self.remove = remove;
-      find = function() {
-        var args;
-        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        return severus.find.apply(severus, ["listings"].concat(__slice.call(args)));
-      };
-      self.find = find;
       return self;
     };
+    listingMaker.find = find;
+    return listingMaker;
   });
   define("listing-view", function() {
     var editableFormMaker, listingViewMaker;
@@ -242,7 +247,6 @@
     return editableFormMaker = function(html, model, options) {
       var clickToMakeEditable, htmlValues, makeEditable, self;
       self = {
-        _type: EditableForm,
         el: $(html),
         model: model
       };
