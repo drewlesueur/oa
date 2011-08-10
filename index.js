@@ -48,18 +48,14 @@
       trigger = self.trigger;
       filebox = fileBoxMaker();
       filebox.on("uploaded", function(urls) {
-        log("triggering add images with");
-        log(urls);
         return trigger("addimages", model, urls);
       });
       el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n</div>");
       fileDroppable(el);
       el.bind("filedroppablefiles", function(e, files) {
-        console.log(files);
         return filebox.uploadFiles(files);
       });
       el.bind("filedroppableurls", function(e, url) {
-        console.log(url);
         return addImage(url);
       });
       el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars());
@@ -98,6 +94,7 @@
         return drews.trigger(triggeree, "modelviewvalchanged", model, "images", images);
       };
       self.handleSaveImages = handleSaveImages;
+      addImages(model.images);
       return self;
     };
   });
@@ -163,13 +160,7 @@
         return model.set(prop, value);
       });
       addImages = function(listing, urls) {
-        console.log("presenter add images called");
-        console.log(listing);
-        console.log(listing.addImages);
-        listing.addImages(urls);
-        log("done");
-        log(listing.addImages);
-        return log("done again");
+        return listing.addImages(urls);
       };
       self.addImages = addImages;
       map.on("addimages", addImages);
@@ -305,7 +296,7 @@
       self.set = set;
       addImages = function(urls) {
         attrs.images || (attrs.images = []);
-        attrs.images.concat(urls);
+        attrs.images = attrs.images.concat(urls);
         self.images = attrs.images;
         trigger("addimages", urls);
         return save(function(err) {
@@ -322,8 +313,6 @@
         if (cb == null) {
           cb = function() {};
         }
-        log("saving");
-        log(attrs);
         return severus.save("listings", attrs, function(error, _listing) {
           _.extend(attrs, _listing);
           return cb(error, self);

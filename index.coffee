@@ -50,10 +50,9 @@ define "bubble-view", () ->
 
     filebox = fileBoxMaker()
     filebox.on "uploaded", (urls) ->
-      log "triggering add images with"
-      log urls
       #trigger addimages view
       trigger "addimages", model, urls
+
     el = $ """
       <div>
         <span class="editable" data-prop="address"></span>
@@ -69,10 +68,8 @@ define "bubble-view", () ->
     """
     fileDroppable el
     el.bind "filedroppablefiles", (e, files) ->
-      console.log files
       filebox.uploadFiles files
     el.bind "filedroppableurls", (e, url) ->
-      console.log url
       addImage url
 
     el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars())
@@ -104,6 +101,7 @@ define "bubble-view", () ->
       images = el.find(".images").val().split("\n")
       drews.trigger triggeree, "modelviewvalchanged", model, "images", images
     self.handleSaveImages = handleSaveImages
+    addImages model.images #initail addimages
     self
 
 # this is the presenter
@@ -157,13 +155,7 @@ define "map-page-presenter", () ->
     
     #addimages presenter
     addImages = (listing, urls) ->
-      console.log "presenter add images called"
-      console.log listing
-      console.log listing.addImages
       listing.addImages urls
-      log "done"
-      log listing.addImages
-      log "done again"
       #listingMaker.addImages listing, urls
     self.addImages = addImages
     # bind addimages presenter
@@ -228,6 +220,7 @@ define "map-page-view", () ->
         else
           done status
     self.lookup = lookup
+    #addListing view
     addListing = (listing, bubbleContent, cb=->) =>
       latlng = new google.maps.LatLng listing.lat, listing.lng
       marker = new google.maps.Marker
@@ -273,7 +266,7 @@ define "listing", () ->
     #addImages model
     addImages = (urls) ->
       attrs.images or= []
-      attrs.images.concat urls
+      attrs.images = attrs.images.concat urls
       self.images = attrs.images
       #trigger addimages model
       trigger "addimages", urls
@@ -286,8 +279,6 @@ define "listing", () ->
       return self.attrs[prop]
 
     save = (cb=->) ->
-      log "saving"
-      log attrs
       severus.save "listings", attrs, (error, _listing) ->
         _.extend attrs, _listing
         cb error, self
