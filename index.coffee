@@ -1,3 +1,14 @@
+# Douglas Crockfords functional inheritance
+# vs aboslutely no polymporphisnm Listing.save listing
+# either way use binds, and triggers (emits and ons) event based
+# programming so it doesn't really matter
+# different parts don't only know very minimal api
+# like model.val (maybe model.get(val))
+# not like: model.view.soSomeCrazyApiCall()
+# or: model.view.bubble = bubble
+# but: trigger "newbubble", model, bubble
+# then the place that knows the model, and its type can set it, or call it
+
 $ = require "jquery"
 _ = require "underscore"
 drews = require "drews-mixins"
@@ -5,9 +16,95 @@ nimble = require "nimble"
 severus = require "severus"
 severus.db = "officeatlas_dev"
 drews.bind = drews.on
+define "drews-event", () ->
+  drewsEventMaker = (obj) ->
+    triggeree = obj
+    obj.setTriggeree = (_trig) ->
+      triggeree = _trig 
+    obj.on = (args...) ->
+      drews.on obj, args...
+    obj.trigger = (args...) ->
+      drews.trigger triggeree, args...
+    obj
+
+drewsEventMaker = require "drews-event"
 
 
 {log} = drews
+
+    
+define "bubble-view", () ->
+  #class BubbleView
+  _ = require "underscore"
+  drews = require "drews-mixins"
+  fileBoxMaker = require "filebox"
+  fileDroppable = require "file-droppable"
+  drewsEventMaker = require "drews-event"
+
+  bubbleViewMaker = (options) ->
+    {triggeree, model} = options
+
+    self = drewsEventMaker options: options
+    self.setTriggeree options?.triggeree or self
+    {trigger} = self
+
+    filebox = fileBoxMaker()
+    filebox.on "uploaded", (urls) ->
+      log "triggering add images with"
+      log urls
+      #trigger addimages view
+      trigger "addimages", model, urls
+    el = $ """
+      <div>
+        <span class="editable" data-prop="address"></span>
+        <div class="editable" data-prop="notes"></div>
+        <!--<a class="add-images" href="#">Add images</a>-->
+        <div class="file-upload">
+        </div>
+        <div class="add-image-area">
+          <textarea class="images"></textarea>
+          <input class="save-images-button" type="button" value="Save images">
+        </div>
+      </div>
+    """
+    fileDroppable el
+    el.bind "filedroppablefiles", (e, files) ->
+      console.log files
+      filebox.uploadFiles files
+    el.bind "filedroppableurls", (e, url) ->
+      console.log url
+      addImage url
+
+    el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars())
+    el.css
+      width: "#{config.width}px"
+      height: "#{config.height}px"
+
+    el.find(".add-image-area").hide()
+    el.find(".add-images").click (e) ->
+      e.preventDefault()
+      self.handleAddImages()
+    el.find(".save-images-button").click (e) ->
+       e.preventDefault()
+       self.handleSaveImages()
+    self.el = el
+    addImages = (urls) ->
+      _.each urls, (url) ->
+        addImage url
+    self.addImages = addImages
+    addImage = (url) ->
+      img = $ """
+        <img src="#{url}" style="width: #{config.width}px"/>
+      """
+      el.append img
+    handleAddImages = () ->
+      self.el.find(".add-image-area").show()
+    self.handleAddImages = handleAddImages
+    handleSaveImages = () ->
+      images = el.find(".images").val().split("\n")
+      drews.trigger triggeree, "modelviewvalchanged", model, "images", images
+    self.handleSaveImages = handleSaveImages
+    self
 
 # this is the presenter
 define "map-page-presenter", () ->
@@ -17,7 +114,7 @@ define "map-page-presenter", () ->
   #class presenter
 
   mapPagePresenterMaker = () ->
-    self = {}
+    self = drewsEventMaker {}
     map = mapPageViewMaker()
     self.map = map
     $(document.body).append self.map.getDiv()
@@ -31,13 +128,19 @@ define "map-page-presenter", () ->
           address: address
         , editAddress: true
     self.handleSubmit = handleSubmit
-    drews.on map, "submit", self.handleSubmit
+    map.on "submit", self.handleSubmit
     addListing = (listing, options) ->
       listing = listingMaker listing
-      listingView = listingViewMaker listing, triggeree: self, editAddress: options?.editAddress
+      listingView = listingViewMaker listing, triggeree: map, editAddress: options?.editAddress
       listing.view = listingView
-      listingViewInfo = map.addListing listing
+      map.addListing listing, listing.view.getBubbleContent()
       listing.presenter = self
+      # either bind on listing or listingMaker
+      # if bind on listingMaker, check for listing._isInApp
+      #
+      # bind addimages presenter
+      listing.on "addimages", (urls) ->
+        listing.view.addImages urls
       if options?.save isnt false
         listing.save()
       listing
@@ -49,13 +152,33 @@ define "map-page-presenter", () ->
       _.each listings, (listing, index) ->
         listings[index] = addListing listing, "save": false
 
-    drews.bind self, "modelviewvalchanged", (model, prop, value) ->
+    map.on "modelviewvalchanged", (model, prop, value) ->
       model.set prop, value
+    
+    #addimages presenter
+    addImages = (listing, urls) ->
+      console.log "presenter add images called"
+      console.log listing
+      console.log listing.addImages
+      listing.addImages urls
+      log "done"
+      log listing.addImages
+      log "done again"
+      #listingMaker.addImages listing, urls
+    self.addImages = addImages
+    # bind addimages presenter
+    map.on "addimages", addImages
 
-    drews.bind map, "bubbleopen", (_listing) ->
+    map.on "bubbleopen", (_listing) ->
       _.each listings, (listing) ->
         if listing != _listing
           listing.view.bubble.close()
+
+    map.on "newbubble", (listing, bubble) ->
+      listing.view.bubble = bubble
+
+    map.on "newmarker", (listing, marker) ->
+      listing.view.marker = marker
     self
 
   
@@ -77,7 +200,8 @@ define "map-page-view", () ->
     self =
       map: map
       el : el
-
+    self = drewsEventMaker self
+    {trigger, on:bind} = self
     bar = searchBarViewMaker triggeree: self
 
     el.append bar.el
@@ -104,7 +228,7 @@ define "map-page-view", () ->
         else
           done status
     self.lookup = lookup
-    addListing = (listing, cb=->) =>
+    addListing = (listing, bubbleContent, cb=->) =>
       latlng = new google.maps.LatLng listing.lat, listing.lng
       marker = new google.maps.Marker
         animation: google.maps.Animation.DROP
@@ -113,21 +237,20 @@ define "map-page-view", () ->
         icon: "http://3office.drewl.us/pinb.png"
       marker.setMap map
       map.setCenter latlng
-      bubbleContent = listing.view.getBubbleContent()
       bubble = new google.maps.InfoWindow
         content: bubbleContent
         position: latlng
      
       google.maps.event.addListener marker, 'click', () ->
         #drews.trigger map, "markerclick", listing
-        drews.trigger self, "bubbleopen", listing 
+        trigger "bubbleopen", listing 
         bubble.open map
         
 
       google.maps.event.addListener bubble, 'closeclick', () ->
-        drews.trigger map, "bubbleclick", listing
-      listing.view.marker = marker
-      listing.view.bubble = bubble
+        trigger "bubbleclick", listing
+      trigger "newmarker", listing, marker
+      trigger "newbubble", listing, bubble
       return {bubble, marker}
     self.addListing = addListing
     self
@@ -136,18 +259,28 @@ define "map-page-view", () ->
 define "listing", () ->
   #closures for classes vs my _type for classes
   #class Listing
-  find = (args...) ->
-    severus.find "listings", args...
+      
   listingMaker = (attrs) ->
-    self = {}
+    self = drewsEventMaker {}
+    {trigger, on:bind} = self
     self.attrs = attrs
     _.extend self, attrs
     set = (prop, value) ->
-
       attrs[prop] = value 
       self[prop] = value # for convenience
       save()
     self.set = set
+    #addImages model
+    addImages = (urls) ->
+      attrs.images or= []
+      attrs.images.concat urls
+      self.images = attrs.images
+      #trigger addimages model
+      trigger "addimages", urls
+      save (err) ->
+        if err
+          trigger "failedimages", urls
+    self.addImages = addImages
 
     get = (self, prop, value) ->
       return self.attrs[prop]
@@ -163,16 +296,22 @@ define "listing", () ->
       severus.remove "listings", attrs._id, cb
     self.remove = remove
     self
-  listingMaker.find = find
+  listingMaker.find = (args...) ->
+    severus.find "listings", args...
+    
+  listingMaker = drewsEventMaker listingMaker
   listingMaker
 
 define "listing-view", () ->
   editableFormMaker = require "editable-form"
   listingViewMaker = (listing, options) ->
+    bubbleView = null
     model = listing
-    self =  {}
+    self =  drewsEventMaker {}
+    triggeree = options.triggeree or self
+    self.setTriggeree triggeree
+    #drewsEventMaker.setTriggeree self, options.triggeree
     self.model = model
-    triggeree = self.triggeree = options?.triggeree or self
 
     getBubbleContent = () ->
       #TODO: cache this
@@ -189,6 +328,11 @@ define "listing-view", () ->
       form.el[0]
     self.getBubbleContent = getBubbleContent
     closeBubble = () ->
+    #view addImages
+    addImages = (urls) ->
+      bubbleView?.addImages urls
+    self.addImages = addImages
+
       
     self
 
@@ -197,13 +341,14 @@ define "listing-view", () ->
 # what is space
 define "editable-form", () ->
   editableFormMaker = (html, model, options) ->
-
     self = 
       el : $ html
       model: model
+    self = drewsEventMaker self
+    triggeree = options?.triggeree or self
+    self.setTriggeree triggeree
+    {trigger} = self
     el = self.el
-    self.triggeree = options?.triggeree or self
-    triggeree = self.triggeree
     
     htmlValues = el.find("[data-prop]")
     drews.eachArray htmlValues, (_el) ->
@@ -231,10 +376,7 @@ define "editable-form", () ->
         newValue = replacer.val()
         _el.html ""
         _el.text newValue 
-        console.log "triggering a save of #{prop}, #{newValue}."
-        console.log "the model is"
-        console.log model
-        drews.trigger triggeree, "modelviewvalchanged", model, prop, newValue
+        trigger "modelviewvalchanged", model, prop, newValue
 
       replacer.bind "keyup", (e) ->
         if e.keyCode is 13
@@ -265,15 +407,39 @@ define "search-bar-view", () ->
 
     self =
       el: el
-    options?.triggeree ||= self
-    {triggeree} = options
+    self = drewsEventMaker self
+    triggeree = options?.triggeree or self
+    self.setTriggeree triggeree
+    {trigger} = self
+
     el.submit (e) ->
       e.preventDefault()
-      console.log "the triggeree is "
-      console.log triggeree
-      drews.trigger triggeree, "submit", el.find(".search").val()
+      trigger "submit", el.find(".search").val()
       el.find(".search").val("")
     self
     
 
+
+config =
+  width: 320
+  height: 320
+
+define "file-droppable", () ->
+ fileDroppable = (el) -> 
+   el.bind "dragover", (e) ->
+     e.preventDefault()
+     e.stopPropagation()
+   el.bind "dragenter", (e) -> #ie?
+     return false
+   el.bind "drop", (e) ->
+     e.preventDefault()
+     e.stopPropagation()
+     e = e.originalEvent #jQuery stuff
+     files = e.dataTransfer.files
+     if files.length > 0
+       el.trigger "filedroppablefiles", [files]
+     else
+       el.trigger "filedroppableurls", e.dataTransfer.getData('text')
+
+     
 
