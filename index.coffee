@@ -1,3 +1,6 @@
+# todo: don't don't bind so many dom events liek delete listing
+# also, dont call getBubbleContent until its needed
+#
 # Douglas Crockfords functional inheritance
 # vs aboslutely no polymporphisnm Listing.save listing
 # either way use binds, and triggers (emits and ons) event based
@@ -64,6 +67,7 @@ define "bubble-view", () ->
           <textarea class="images"></textarea>
           <input class="save-images-button" type="button" value="Save images">
         </div>
+        <a href="#" class="delete">Delete Listing</a>
       </div>
     """
     fileDroppable el
@@ -73,6 +77,14 @@ define "bubble-view", () ->
       addImage url
 
     el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars())
+    el.find(".delete").click (e) ->
+      e.preventDefault()
+      handleDeleteButton()
+
+    handleDeleteButton = () ->
+      trigger "deletelisting", model
+     
+      
     el.css
       width: "#{config.width}px"
       height: "#{config.height}px"
@@ -139,6 +151,8 @@ define "map-page-presenter", () ->
       # bind addimages presenter
       listing.on "addimages", (urls) ->
         listing.view.addImages urls
+      listing.on "deleted", () ->
+        map.removeListing listing
       if options?.save isnt false
         listing.save()
       listing
@@ -168,6 +182,12 @@ define "map-page-presenter", () ->
 
     map.on "newbubble", (listing, bubble) ->
       listing.view.bubble = bubble
+    
+    deleteListing = (listing) ->
+      listing.remove()
+
+    map.on "deletelisting", deleteListing
+    
 
     map.on "newmarker", (listing, marker) ->
       listing.view.marker = marker
@@ -220,6 +240,13 @@ define "map-page-view", () ->
         else
           done status
     self.lookup = lookup
+    #removeListing view
+    removeListing = (listing) ->
+      listing.view.marker.setMap null
+      listing.view.bubble.close()
+    self.removeListing = removeListing
+    
+
     #addListing view
     addListing = (listing, bubbleContent, cb=->) =>
       latlng = new google.maps.LatLng listing.lat, listing.lng
@@ -284,7 +311,8 @@ define "listing", () ->
         cb error, self
     self.save = save
     remove = (cb) ->
-      severus.remove "listings", attrs._id, cb
+      severus.remove "listings", attrs._id, (err) ->
+        trigger "deleted", self
     self.remove = remove
     self
   listingMaker.find = (args...) ->

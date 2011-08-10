@@ -39,7 +39,7 @@
     fileDroppable = require("file-droppable");
     drewsEventMaker = require("drews-event");
     return bubbleViewMaker = function(options) {
-      var addImage, addImages, el, filebox, handleAddImages, handleSaveImages, model, self, trigger, triggeree;
+      var addImage, addImages, el, filebox, handleAddImages, handleDeleteButton, handleSaveImages, model, self, trigger, triggeree;
       triggeree = options.triggeree, model = options.model;
       self = drewsEventMaker({
         options: options
@@ -50,7 +50,7 @@
       filebox.on("uploaded", function(urls) {
         return trigger("addimages", model, urls);
       });
-      el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n</div>");
+      el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n</div>");
       fileDroppable(el);
       el.bind("filedroppablefiles", function(e, files) {
         return filebox.uploadFiles(files);
@@ -59,6 +59,13 @@
         return addImage(url);
       });
       el.find(".file-upload").append(filebox.getEl()).append(filebox.getProgressBars());
+      el.find(".delete").click(function(e) {
+        e.preventDefault();
+        return handleDeleteButton();
+      });
+      handleDeleteButton = function() {
+        return trigger("deletelisting", model);
+      };
       el.css({
         width: "" + config.width + "px",
         height: "" + config.height + "px"
@@ -104,7 +111,7 @@
     listingMaker = require("listing");
     listingViewMaker = require("listing-view");
     return mapPagePresenterMaker = function() {
-      var addImages, addListing, handleSubmit, listings, map, self;
+      var addImages, addListing, deleteListing, handleSubmit, listings, map, self;
       self = drewsEventMaker({});
       map = mapPageViewMaker();
       self.map = map;
@@ -140,6 +147,9 @@
         listing.on("addimages", function(urls) {
           return listing.view.addImages(urls);
         });
+        listing.on("deleted", function() {
+          return map.removeListing(listing);
+        });
         if ((options != null ? options.save : void 0) !== false) {
           listing.save();
         }
@@ -174,6 +184,10 @@
       map.on("newbubble", function(listing, bubble) {
         return listing.view.bubble = bubble;
       });
+      deleteListing = function(listing) {
+        return listing.remove();
+      };
+      map.on("deletelisting", deleteListing);
       map.on("newmarker", function(listing, marker) {
         return listing.view.marker = marker;
       });
@@ -184,7 +198,7 @@
     var mapPageViewMaker, searchBarViewMaker;
     searchBarViewMaker = require("search-bar-view");
     return mapPageViewMaker = function(el) {
-      var addListing, bar, bind, getCenter, getDiv, getZoom, latLng, lookup, map, options, self, setLatLng, trigger;
+      var addListing, bar, bind, getCenter, getDiv, getZoom, latLng, lookup, map, options, removeListing, self, setLatLng, trigger;
       if (el == null) {
         el = $("<div class=\"map\"></div>", options);
       }
@@ -244,6 +258,11 @@
         }, this));
       }, this);
       self.lookup = lookup;
+      removeListing = function(listing) {
+        listing.view.marker.setMap(null);
+        return listing.view.bubble.close();
+      };
+      self.removeListing = removeListing;
       addListing = __bind(function(listing, bubbleContent, cb) {
         var bubble, latlng, marker;
         if (cb == null) {
@@ -320,7 +339,9 @@
       };
       self.save = save;
       remove = function(cb) {
-        return severus.remove("listings", attrs._id, cb);
+        return severus.remove("listings", attrs._id, function(err) {
+          return trigger("deleted", self);
+        });
       };
       self.remove = remove;
       return self;
