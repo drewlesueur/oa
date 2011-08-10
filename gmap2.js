@@ -72,7 +72,7 @@
           animation: google.maps.Animation.DROP,
           position: latlng,
           title: listing.address,
-          icon: "http://office.the.tl/pin.png"
+          icon: "http://3office.drewl.us/pina.png"
         });
         marker.setMap(map);
         map.setCenter(latlng);

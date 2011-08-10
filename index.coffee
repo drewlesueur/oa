@@ -110,7 +110,7 @@ define "map-page-view", () ->
         animation: google.maps.Animation.DROP
         position: latlng
         title: listing.address
-        icon: "http://office.the.tl/pin.png"
+        icon: "http://3office.drewl.us/pinb.png"
       marker.setMap map
       map.setCenter latlng
       bubbleContent = listing.view.getBubbleContent()
