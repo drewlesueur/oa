@@ -1,19 +1,18 @@
 (function() {
   define("bubble-view", function() {
-    var $, bubbleViewMaker, config, drews, drewsEventMaker, fileBoxMaker, fileDroppable, imageRotatorer, nimble, _;
+    var $, bubbleViewMaker, config, drews, drewsEventMaker, fileBoxMaker, fileDroppable, nimble, _;
     $ = require("jquery");
     nimble = require("nimble");
-    _ = require("underscore");
-    drews = require("drews-mixins");
     drews.bind = drews.on;
     drewsEventMaker = require("drews-event");
+    _ = require("underscore");
+    drews = require("drews-mixins");
     fileBoxMaker = require("filebox");
     fileDroppable = require("file-droppable");
     drewsEventMaker = require("drews-event");
     config = require("config");
-    imageRotatorer = require("image-rotator");
     return bubbleViewMaker = function(options) {
-      var addImage, addImages, el, filebox, handleAddImages, handleDeleteButton, handleSaveImages, imageRotator, model, self, trigger, triggeree;
+      var addImage, addImages, el, filebox, handleAddImages, handleDeleteButton, handleSaveImages, model, self, trigger, triggeree;
       triggeree = options.triggeree, model = options.model;
       self = drewsEventMaker({
         options: options
@@ -28,8 +27,6 @@
         return trigger("addimages", model, urls);
       });
       el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n</div>");
-      imageRotator = imageRotatorer();
-      el.find(".image-area").append(imageRotator.el);
       fileDroppable(el);
       el.bind("filedroppablefiles", function(e, files) {
         return filebox.uploadFiles(files);
@@ -61,6 +58,7 @@
         return self.handleSaveImages();
       });
       self.el = el;
+      view(addimages);
       addImages = function(urls) {
         console.log("urls are");
         console.log(urls);
@@ -70,9 +68,12 @@
       };
       self.addImages = addImages;
       addImage = function(url) {
+        var img;
         console.log("trying to add a single image");
+        img = $("<img src=\"" + url + "\" style=\"width: " + config.width + "px; position: absolute; top: 0; left: 0;\"/>");
+        console.log(img);
         console.log(el);
-        return imageRotator.addImage(url, config.width);
+        return el.find(".image-area").append(img);
       };
       handleAddImages = function() {
         return self.el.find(".add-image-area").show();
