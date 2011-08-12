@@ -48,12 +48,15 @@ define "bubble-view", () ->
     {triggeree, model} = options
 
     self = drewsEventMaker options: options
-    self.setTriggeree options?.triggeree or self
+    triggeree =  options?.triggeree or self
+    self.setTriggeree triggeree
     {trigger} = self
 
     filebox = fileBoxMaker()
     filebox.on "uploaded", (urls) ->
       #trigger addimages view
+      console.log "triggeree is"
+      console.log triggeree
       trigger "addimages", model, urls
 
     el = $ """
@@ -82,7 +85,8 @@ define "bubble-view", () ->
       handleDeleteButton()
 
     handleDeleteButton = () ->
-      trigger "deletelisting", model
+      if (confirm("Are you sure you want to delete?"))
+        trigger "deletelisting", model
      
       
     el.css
@@ -98,13 +102,19 @@ define "bubble-view", () ->
        self.handleSaveImages()
     self.el = el
     addImages = (urls) ->
+      console.log "urls are"
+      console.log urls
       _.each urls, (url) ->
         addImage url
     self.addImages = addImages
     addImage = (url) ->
+      console.log "trying to add a single image"
       img = $ """
         <img src="#{url}" style="width: #{config.width}px"/>
       """
+      console.log img
+      console.log el
+      #el.remove()
       el.append img
     handleAddImages = () ->
       self.el.find(".add-image-area").show()
@@ -143,7 +153,7 @@ define "map-page-presenter", () ->
       listing = listingMaker listing
       listingView = listingViewMaker listing, triggeree: map, editAddress: options?.editAddress
       listing.view = listingView
-      map.addListing listing, listing.view.getBubbleContent()
+      map.addListing listing
       listing.presenter = self
       # either bind on listing or listingMaker
       # if bind on listingMaker, check for listing._isInApp
@@ -153,6 +163,7 @@ define "map-page-presenter", () ->
         listing.view.addImages urls
       listing.on "deleted", () ->
         map.removeListing listing
+
       if options?.save isnt false
         listing.save()
       listing
@@ -169,12 +180,16 @@ define "map-page-presenter", () ->
     
     #addimages presenter
     addImages = (listing, urls) ->
+      console.log "called the add images function"
+      console.log listing
       listing.addImages urls
       #listingMaker.addImages listing, urls
     self.addImages = addImages
     # bind addimages presenter
-    map.on "addimages", addImages
 
+    #TODO: event is no longer triggered on map
+    # maybe should be in the future so you have one listener
+    map.on "addimages", addImages
     map.on "bubbleopen", (_listing) ->
       _.each listings, (listing) ->
         if listing != _listing
@@ -248,30 +263,10 @@ define "map-page-view", () ->
     
 
     #addListing view
-    addListing = (listing, bubbleContent, cb=->) =>
-      latlng = new google.maps.LatLng listing.lat, listing.lng
-      marker = new google.maps.Marker
-        animation: google.maps.Animation.DROP
-        position: latlng
-        title: listing.address
-        icon: "http://3office.drewl.us/pinb.png"
-      marker.setMap map
-      map.setCenter latlng
-      bubble = new google.maps.InfoWindow
-        content: bubbleContent
-        position: latlng
-     
-      google.maps.event.addListener marker, 'click', () ->
-        #drews.trigger map, "markerclick", listing
-        trigger "bubbleopen", listing 
-        bubble.open map
-        
+    addListing = (listing, cb=->) =>
+      listing.view.marker.setMap map
+      map.setCenter listing.view.latlng
 
-      google.maps.event.addListener bubble, 'closeclick', () ->
-        trigger "bubbleclick", listing
-      trigger "newmarker", listing, marker
-      trigger "newbubble", listing, bubble
-      return {bubble, marker}
     self.addListing = addListing
     self
 
@@ -320,7 +315,7 @@ define "listing", () ->
     
   listingMaker = drewsEventMaker listingMaker
   listingMaker
-
+ 
 define "listing-view", () ->
   editableFormMaker = require "editable-form"
   listingViewMaker = (listing, options) ->
@@ -331,9 +326,9 @@ define "listing-view", () ->
     self.setTriggeree triggeree
     #drewsEventMaker.setTriggeree self, options.triggeree
     self.model = model
+    {trigger, on:bind} = self
 
     getBubbleContent = () ->
-      #TODO: cache this
       listing = model
       if self.bubbleContent
         return self.bubbleContent
@@ -346,14 +341,39 @@ define "listing-view", () ->
         form.makeEditable("address")
       form.el[0]
     self.getBubbleContent = getBubbleContent
+
     closeBubble = () ->
     #view addImages
     addImages = (urls) ->
+      console.log "trying to add images2"
+      console.log urls
+      console.log bubbleView
       bubbleView?.addImages urls
     self.addImages = addImages
-
-      
     self
+    latlng = new google.maps.LatLng listing.lat, listing.lng
+    self.latlng = latlng
+    marker = new google.maps.Marker
+      animation: google.maps.Animation.DROP
+      position: latlng
+      title: listing.address
+      icon: "http://3office.drewl.us/pinb.png"
+    bubble = new google.maps.InfoWindow
+      content: getBubbleContent()
+      position: latlng
+    self.marker = marker 
+    self.bubble = bubble
+    google.maps.event.addListener marker, 'click', () ->
+      #drews.trigger map, "markerclick", listing
+      trigger "bubbleopen", listing 
+      #TODO: make the reference to map simpler
+      bubble.open listing.presenter.map.map
+      
+
+    google.maps.event.addListener bubble, 'closeclick', () ->
+      trigger "bubbleclick", listing
+    return self
+
 
 
 # use a self or a big closure

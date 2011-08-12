@@ -44,10 +44,13 @@
       self = drewsEventMaker({
         options: options
       });
-      self.setTriggeree((options != null ? options.triggeree : void 0) || self);
+      triggeree = (options != null ? options.triggeree : void 0) || self;
+      self.setTriggeree(triggeree);
       trigger = self.trigger;
       filebox = fileBoxMaker();
       filebox.on("uploaded", function(urls) {
+        console.log("triggeree is");
+        console.log(triggeree);
         return trigger("addimages", model, urls);
       });
       el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n</div>");
@@ -64,7 +67,9 @@
         return handleDeleteButton();
       });
       handleDeleteButton = function() {
-        return trigger("deletelisting", model);
+        if (confirm("Are you sure you want to delete?")) {
+          return trigger("deletelisting", model);
+        }
       };
       el.css({
         width: "" + config.width + "px",
@@ -81,6 +86,8 @@
       });
       self.el = el;
       addImages = function(urls) {
+        console.log("urls are");
+        console.log(urls);
         return _.each(urls, function(url) {
           return addImage(url);
         });
@@ -88,7 +95,10 @@
       self.addImages = addImages;
       addImage = function(url) {
         var img;
+        console.log("trying to add a single image");
         img = $("<img src=\"" + url + "\" style=\"width: " + config.width + "px\"/>");
+        console.log(img);
+        console.log(el);
         return el.append(img);
       };
       handleAddImages = function() {
@@ -142,7 +152,7 @@
           editAddress: options != null ? options.editAddress : void 0
         });
         listing.view = listingView;
-        map.addListing(listing, listing.view.getBubbleContent());
+        map.addListing(listing);
         listing.presenter = self;
         listing.on("addimages", function(urls) {
           return listing.view.addImages(urls);
@@ -170,6 +180,8 @@
         return model.set(prop, value);
       });
       addImages = function(listing, urls) {
+        console.log("called the add images function");
+        console.log(listing);
         return listing.addImages(urls);
       };
       self.addImages = addImages;
@@ -263,37 +275,12 @@
         return listing.view.bubble.close();
       };
       self.removeListing = removeListing;
-      addListing = __bind(function(listing, bubbleContent, cb) {
-        var bubble, latlng, marker;
+      addListing = __bind(function(listing, cb) {
         if (cb == null) {
           cb = function() {};
         }
-        latlng = new google.maps.LatLng(listing.lat, listing.lng);
-        marker = new google.maps.Marker({
-          animation: google.maps.Animation.DROP,
-          position: latlng,
-          title: listing.address,
-          icon: "http://3office.drewl.us/pinb.png"
-        });
-        marker.setMap(map);
-        map.setCenter(latlng);
-        bubble = new google.maps.InfoWindow({
-          content: bubbleContent,
-          position: latlng
-        });
-        google.maps.event.addListener(marker, 'click', function() {
-          trigger("bubbleopen", listing);
-          return bubble.open(map);
-        });
-        google.maps.event.addListener(bubble, 'closeclick', function() {
-          return trigger("bubbleclick", listing);
-        });
-        trigger("newmarker", listing, marker);
-        trigger("newbubble", listing, bubble);
-        return {
-          bubble: bubble,
-          marker: marker
-        };
+        listing.view.marker.setMap(map);
+        return map.setCenter(listing.view.latlng);
       }, this);
       self.addListing = addListing;
       return self;
@@ -358,13 +345,14 @@
     var editableFormMaker, listingViewMaker;
     editableFormMaker = require("editable-form");
     return listingViewMaker = function(listing, options) {
-      var addImages, bubbleView, closeBubble, getBubbleContent, model, self, triggeree;
+      var addImages, bind, bubble, bubbleView, closeBubble, getBubbleContent, latlng, marker, model, self, trigger, triggeree;
       bubbleView = null;
       model = listing;
       self = drewsEventMaker({});
       triggeree = options.triggeree || self;
       self.setTriggeree(triggeree);
       self.model = model;
+      trigger = self.trigger, bind = self.on;
       getBubbleContent = function() {
         var bubbleViewMaker, form;
         listing = model;
@@ -388,9 +376,34 @@
       self.getBubbleContent = getBubbleContent;
       closeBubble = function() {};
       addImages = function(urls) {
+        console.log("trying to add images2");
+        console.log(urls);
+        console.log(bubbleView);
         return bubbleView != null ? bubbleView.addImages(urls) : void 0;
       };
       self.addImages = addImages;
+      self;
+      latlng = new google.maps.LatLng(listing.lat, listing.lng);
+      self.latlng = latlng;
+      marker = new google.maps.Marker({
+        animation: google.maps.Animation.DROP,
+        position: latlng,
+        title: listing.address,
+        icon: "http://3office.drewl.us/pinb.png"
+      });
+      bubble = new google.maps.InfoWindow({
+        content: getBubbleContent(),
+        position: latlng
+      });
+      self.marker = marker;
+      self.bubble = bubble;
+      google.maps.event.addListener(marker, 'click', function() {
+        trigger("bubbleopen", listing);
+        return bubble.open(listing.presenter.map.map);
+      });
+      google.maps.event.addListener(bubble, 'closeclick', function() {
+        return trigger("bubbleclick", listing);
+      });
       return self;
     };
   });
