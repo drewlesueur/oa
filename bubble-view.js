@@ -13,7 +13,7 @@
     config = require("config");
     imageRotatorer = require("image-rotator");
     return bubbleViewMaker = function(options) {
-      var addImage, addImages, el, filebox, handleAddImages, handleDeleteButton, handleSaveImages, imageRotator, model, self, trigger, triggeree;
+      var addImage, addImages, bubbleHtml, deleteImage, el, filebox, handleAddImages, handleDeleteButton, handleSaveImages, imageRotator, model, self, trigger, triggeree;
       triggeree = options.triggeree, model = options.model;
       self = drewsEventMaker({
         options: options
@@ -25,9 +25,14 @@
       filebox.on("uploaded", function(urls) {
         return trigger("addimages", model, urls);
       });
-      el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\" >\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n</div>");
+      bubbleHtml = require("bubble-html");
+      el = $("<div>\n  <div>\n    " + bubbleHtml + "\n  </div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\" >\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n  <div style=\"bottom: -10px; position: absolute;\">\n    <a href=\"#\" style=\"font-size: 10px;\" class=\"delete-image\">delete image</a>\n  </div>\n</div>");
       imageRotator = imageRotatorer();
       el.find(".image-area").append(imageRotator.el);
+      el.find(".delete-image").bind("click", function() {
+        console.log(imageRotator);
+        return trigger("deleteimage", model, imageRotator.getCurrentUrl());
+      });
       fileDroppable(el);
       el.bind("filedroppablefiles", function(e, files) {
         return filebox.uploadFiles(files);
@@ -59,6 +64,9 @@
         return self.handleSaveImages();
       });
       self.el = el;
+      deleteImage = self.deleteImage = function(url) {
+        return imageRotator.deleteImage(url);
+      };
       addImages = function(urls) {
         return _.each(urls, function(url) {
           return addImage(url);

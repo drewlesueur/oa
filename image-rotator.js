@@ -1,15 +1,16 @@
 (function() {
   define("image-rotator", function() {
-    var $, config, drews, imageRotatorer, nimble, severus, _;
+    var $, config, drews, drewsEventMaker, imageRotatorer, nimble, severus, _;
     $ = require("jquery");
     _ = require("underscore");
     drews = require("drews-mixins");
     nimble = require("nimble");
     severus = require("severus");
     config = require("config");
+    drewsEventMaker = require("drews-event");
     return imageRotatorer = function() {
-      var addImage, el, getAdjustedDimensions, handleImageClick, images, index, next, prev, render, self;
-      self = drews;
+      var addImage, deleteImage, el, getAdjustedDimensions, getCurrentUrl, handleImageClick, images, index, next, prev, render, self;
+      self = drewsEventMaker({});
       el = $("<div class=\"image-rotator\" style=\"position:relative;\">\n</div>");
       index = 0;
       images = [];
@@ -26,6 +27,15 @@
         } else {
           return [config.imgMaxWidth, widthedHeight];
         }
+      };
+      deleteImage = self.deleteImage = function(url) {
+        var image, index, _len, _results;
+        _results = [];
+        for (index = 0, _len = images.length; index < _len; index++) {
+          image = images[index];
+          _results.push(image.attr("src") === url ? (images.splice(index, 1), next(), image.remove()) : void 0);
+        }
+        return _results;
       };
       addImage = function(url) {
         var img;
@@ -44,6 +54,7 @@
           });
         });
         images.push(img);
+        index += 1;
         el.append(img);
         next();
         return self;
@@ -53,6 +64,8 @@
       };
       self.addImage = addImage;
       next = function() {
+        console.log(images);
+        console.log(index);
         index += 1;
         if (index >= images.length) {
           index = 0;
@@ -60,6 +73,13 @@
         return render();
       };
       self.next = next;
+      getCurrentUrl = function() {
+        console.log(images);
+        console.log(index);
+        console.log(images[index]);
+        return images[index].attr("src");
+      };
+      self.getCurrentUrl = getCurrentUrl;
       prev = function() {
         index += 1;
         if (index <= 0) {

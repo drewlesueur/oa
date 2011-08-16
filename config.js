@@ -4,7 +4,7 @@
       width: 320,
       height: 320,
       imgMaxWidth: 320,
-      imgMaxHeight: 220
+      imgMaxHeight: 230
     };
   });
 }).call(this);

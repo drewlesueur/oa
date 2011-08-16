@@ -3,5 +3,5 @@ define "config", () ->
   height: 320
 
   imgMaxWidth: 320
-  imgMaxHeight: 220
+  imgMaxHeight: 230
 

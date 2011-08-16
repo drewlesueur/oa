@@ -11,7 +11,7 @@
     listingMaker = require("listing");
     listingViewMaker = require("listing-view");
     return mapPagePresenterMaker = function() {
-      var addImages, addListing, deleteListing, handleSubmit, listings, map, self;
+      var addImages, addListing, deleteImage, deleteListing, handleSubmit, listings, map, self;
       self = drewsEventMaker({});
       map = mapPageViewMaker();
       self.map = map;
@@ -49,6 +49,9 @@
         });
         listing.on("deleted", function() {
           return map.removeListing(listing);
+        });
+        listing.on("deleteimage", function(url) {
+          return listing.view.deleteImage(url);
         });
         if ((options != null ? options.save : void 0) !== false) {
           listing.save();
@@ -89,7 +92,11 @@
       deleteListing = function(listing) {
         return listing.remove();
       };
+      deleteImage = function(listing, url) {
+        return listing.deleteImage(url);
+      };
       map.on("deletelisting", deleteListing);
+      map.on("deleteimage", deleteImage);
       map.on("newmarker", function(listing, marker) {
         return listing.view.marker = marker;
       });

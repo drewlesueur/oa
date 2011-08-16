@@ -32,6 +32,14 @@ define "listing", () ->
         if err
           trigger "failedimages", urls
     self.addImages = addImages
+    deleteImage = self.deleteImage = (url) ->
+      attrs.images or= []
+      for image, index in attrs.images
+        if image == url
+          attrs.images.splice(index, 1)
+          trigger "deleteimage", (url)
+          save (err) ->
+            trigger "faileddeleteimage"
 
     get = (self, prop, value) ->
       return self.attrs[prop]

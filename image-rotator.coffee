@@ -5,8 +5,11 @@ define "image-rotator", () ->
   nimble = require "nimble"
   severus = require "severus"
   config = require "config"
+  drewsEventMaker = require "drews-event"
+  
+
   imageRotatorer = () ->
-    self = drews
+    self = drewsEventMaker {}
     el = $ """
       <div class="image-rotator" style="position:relative;">
       </div>
@@ -26,6 +29,13 @@ define "image-rotator", () ->
       else
         [config.imgMaxWidth, widthedHeight]
 
+    deleteImage = self.deleteImage = (url) ->
+      for image, index in images
+        if image.attr("src") == url
+          images.splice(index, 1)
+          next()
+          image.remove()
+
     addImage = (url) ->
       img = $ """
         <img src="#{url}" style="width: #{config.imgMaxWidth}px; position: absolute; top: 0; left: 0;"/>
@@ -40,6 +50,7 @@ define "image-rotator", () ->
 
 
       images.push img
+      index += 1
       el.append img
       next()
       self
@@ -48,11 +59,21 @@ define "image-rotator", () ->
     self.addImage = addImage
 
     next = () ->
+      console.log images
+      console.log index
       index += 1 
       if index >= images.length
         index = 0
       render()
     self.next = next
+
+    getCurrentUrl = () ->
+      console.log images
+      console.log index
+      console.log images[index]
+      images[index].attr "src"
+    self.getCurrentUrl = getCurrentUrl
+    
 
 
     prev = () ->

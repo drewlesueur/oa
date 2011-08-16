@@ -25,12 +25,12 @@ define "bubble-view", () ->
     filebox.on "uploaded", (urls) ->
       #trigger addimages view
       trigger "addimages", model, urls
-
+    bubbleHtml = require "bubble-html"
     el = $ """
       <div>
-        <span class="editable" data-prop="address"></span>
-        <!--<a class="add-images" href="#">Add images</a>-->
-        <div class="editable" data-prop="notes"></div>
+        <div>
+          #{bubbleHtml}
+        </div>
         <a href="#" class="delete">Delete Listing</a>
         <div class="file-upload">
         </div>
@@ -40,11 +40,18 @@ define "bubble-view", () ->
         </div>
         <div class="image-area" style="position:relative;">
         </div>
+        <div style="bottom: -10px; position: absolute;">
+          <a href="#" style="font-size: 10px;" class="delete-image">delete image</a>
+        </div>
       </div>
     """
+    
     imageRotator = imageRotatorer()
     el.find(".image-area").append imageRotator.el
-    
+    el.find(".delete-image").bind "click", () ->
+      console.log imageRotator
+      trigger "deleteimage", model, imageRotator.getCurrentUrl()
+
     fileDroppable el
     el.bind "filedroppablefiles", (e, files) ->
       filebox.uploadFiles files
@@ -72,6 +79,10 @@ define "bubble-view", () ->
        e.preventDefault()
        self.handleSaveImages()
     self.el = el
+
+    deleteImage = self.deleteImage = (url) ->
+      imageRotator.deleteImage url
+
     #view addimages
     addImages = (urls) ->
       _.each urls, (url) ->

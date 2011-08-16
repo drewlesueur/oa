@@ -40,6 +40,8 @@ define "map-page-presenter", () ->
         listing.view.addImages urls
       listing.on "deleted", () ->
         map.removeListing listing
+      listing.on "deleteimage", (url) ->
+        listing.view.deleteImage url
 
       if options?.save isnt false
         listing.save()
@@ -78,7 +80,12 @@ define "map-page-presenter", () ->
     deleteListing = (listing) ->
       listing.remove()
 
+    deleteImage = (listing, url) ->
+      listing.deleteImage url
+
+
     map.on "deletelisting", deleteListing
+    map.on "deleteimage", deleteImage
     
 
     map.on "newmarker", (listing, marker) ->

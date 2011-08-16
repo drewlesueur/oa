@@ -9,7 +9,7 @@
     drewsEventMaker = require("drews-event");
     editableFormMaker = require("editable-form");
     return listingViewMaker = function(listing, options) {
-      var addImages, bind, bubble, bubbleView, closeBubble, getBubbleContent, latlng, marker, model, self, trigger, triggeree;
+      var addImages, bind, bubble, bubbleView, closeBubble, deleteImage, getBubbleContent, latlng, marker, model, self, trigger, triggeree;
       bubbleView = null;
       model = listing;
       self = drewsEventMaker({});
@@ -44,6 +44,10 @@
         return bubbleView != null ? bubbleView.addImages(urls) : void 0;
       };
       self.addImages = addImages;
+      deleteImage = function(url) {
+        return bubbleView != null ? bubbleView.deleteImage(url) : void 0;
+      };
+      self.deleteImage = deleteImage;
       latlng = new google.maps.LatLng(listing.lat, listing.lng);
       self.latlng = latlng;
       marker = new google.maps.Marker({
