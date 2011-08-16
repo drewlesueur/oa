@@ -23,11 +23,9 @@
       trigger = self.trigger;
       filebox = fileBoxMaker();
       filebox.on("uploaded", function(urls) {
-        console.log("triggeree is");
-        console.log(triggeree);
         return trigger("addimages", model, urls);
       });
-      el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\">\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n</div>");
+      el = $("<div>\n  <span class=\"editable\" data-prop=\"address\"></span>\n  <!--<a class=\"add-images\" href=\"#\">Add images</a>-->\n  <div class=\"editable\" data-prop=\"notes\"></div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\" >\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n</div>");
       imageRotator = imageRotatorer();
       el.find(".image-area").append(imageRotator.el);
       fileDroppable(el);
@@ -62,16 +60,12 @@
       });
       self.el = el;
       addImages = function(urls) {
-        console.log("urls are");
-        console.log(urls);
         return _.each(urls, function(url) {
           return addImage(url);
         });
       };
       self.addImages = addImages;
       addImage = function(url) {
-        console.log("trying to add a single image");
-        console.log(el);
         return imageRotator.addImage(url, config.width);
       };
       handleAddImages = function() {

@@ -4,6 +4,7 @@ define "image-rotator", () ->
   drews = require "drews-mixins"
   nimble = require "nimble"
   severus = require "severus"
+  config = require "config"
   imageRotatorer = () ->
     self = drews
     el = $ """
@@ -15,10 +16,32 @@ define "image-rotator", () ->
     self.el = el
     el.bind "click", (e) ->
       handleImageClick()
-    addImage = (url, width) ->
+    addImage = (url, maxDimension) ->
+
       img = $ """
-        <img src="#{url}" style="width: #{width}px; position: absolute; top: 0; left: 0;"/>
+        <img src="#{url}" style="position: absolute; top: 0; left: 0;"/>
       """
+      img.bind "load", () ->
+        h = this.height #img.height()
+        w = this.width #width()
+
+        console.log "height = #{h}"
+        console.log "width = #{w}"
+
+        #if maxed to width
+        widthedHeight = (h/w) * config.imgMaxWidth
+        heightedWidth =  (w/h) * config.imgMaxHeight
+
+        console.log "maxHeight #{config.imgMaxHeight} heightedWidth #{heightedWidth}"
+        console.log "maxWidth #{config.imgMaxWidth} widthedHeight #{widthedHeight}"
+
+        if widthedHeight > config.imgMaxHeight
+          img.css "height": "#{config.imgMaxHeight}px"
+          img.css "width": "#{heightedWidth}px"
+        else
+          img.css "height": "#{widthedHeight}px"
+          img.css "width": "#{config.imgMaxWidth}px"
+
       images.push img
       el.append img
       next()
@@ -43,17 +66,11 @@ define "image-rotator", () ->
     self.prev = prev
 
     render = () ->
-      console.log _.map images, (image) -> image.attr "src"
       for image, i in images
-        console.log "#{index} =?= #{i}"
         if index == i
-          console.log "yes, showing"
           images[i].show()
-          console.log images[i].attr "src"
         else
-          console.log "no, hiding`"
           images[i].hide()
-          console.log images[i].attr "src"
     self
 
 

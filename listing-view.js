@@ -44,7 +44,6 @@
         return bubbleView != null ? bubbleView.addImages(urls) : void 0;
       };
       self.addImages = addImages;
-      self;
       latlng = new google.maps.LatLng(listing.lat, listing.lng);
       self.latlng = latlng;
       marker = new google.maps.Marker({

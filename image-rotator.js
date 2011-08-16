@@ -1,11 +1,12 @@
 (function() {
   define("image-rotator", function() {
-    var $, drews, imageRotatorer, nimble, severus, _;
+    var $, config, drews, imageRotatorer, nimble, severus, _;
     $ = require("jquery");
     _ = require("underscore");
     drews = require("drews-mixins");
     nimble = require("nimble");
     severus = require("severus");
+    config = require("config");
     return imageRotatorer = function() {
       var addImage, el, handleImageClick, images, index, next, prev, render, self;
       self = drews;
@@ -16,9 +17,35 @@
       el.bind("click", function(e) {
         return handleImageClick();
       });
-      addImage = function(url, width) {
+      addImage = function(url, maxDimension) {
         var img;
-        img = $("<img src=\"" + url + "\" style=\"width: " + width + "px; position: absolute; top: 0; left: 0;\"/>");
+        img = $("<img src=\"" + url + "\" style=\"position: absolute; top: 0; left: 0;\"/>");
+        img.bind("load", function() {
+          var h, heightedWidth, w, widthedHeight;
+          h = this.height;
+          w = this.width;
+          console.log("height = " + h);
+          console.log("width = " + w);
+          widthedHeight = (h / w) * config.imgMaxWidth;
+          heightedWidth = (w / h) * config.imgMaxHeight;
+          console.log("maxHeight " + config.imgMaxHeight + " heightedWidth " + heightedWidth);
+          console.log("maxWidth " + config.imgMaxWidth + " widthedHeight " + widthedHeight);
+          if (widthedHeight > config.imgMaxHeight) {
+            img.css({
+              "height": "" + config.imgMaxHeight + "px"
+            });
+            return img.css({
+              "width": "" + heightedWidth + "px"
+            });
+          } else {
+            img.css({
+              "height": "" + widthedHeight + "px"
+            });
+            return img.css({
+              "width": "" + config.imgMaxWidth + "px"
+            });
+          }
+        });
         images.push(img);
         el.append(img);
         next();
@@ -46,14 +73,10 @@
       self.prev = prev;
       render = function() {
         var i, image, _len, _results;
-        console.log(_.map(images, function(image) {
-          return image.attr("src");
-        }));
         _results = [];
         for (i = 0, _len = images.length; i < _len; i++) {
           image = images[i];
-          console.log("" + index + " =?= " + i);
-          _results.push(index === i ? (console.log("yes, showing"), images[i].show(), console.log(images[i].attr("src"))) : (console.log("no, hiding`"), images[i].hide(), console.log(images[i].attr("src"))));
+          _results.push(index === i ? images[i].show() : images[i].hide());
         }
         return _results;
       };

@@ -37,7 +37,7 @@ define "listing-view", () ->
     addImages = (urls) ->
       bubbleView?.addImages urls
     self.addImages = addImages
-    self
+    
     latlng = new google.maps.LatLng listing.lat, listing.lng
     self.latlng = latlng
     marker = new google.maps.Marker

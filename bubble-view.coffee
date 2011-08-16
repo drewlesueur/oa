@@ -24,24 +24,22 @@ define "bubble-view", () ->
     filebox = fileBoxMaker()
     filebox.on "uploaded", (urls) ->
       #trigger addimages view
-      console.log "triggeree is"
-      console.log triggeree
       trigger "addimages", model, urls
 
     el = $ """
       <div>
         <span class="editable" data-prop="address"></span>
         <!--<a class="add-images" href="#">Add images</a>-->
+        <div class="editable" data-prop="notes"></div>
+        <a href="#" class="delete">Delete Listing</a>
         <div class="file-upload">
         </div>
-        <div class="add-image-area">
+        <div class="add-image-area" >
           <textarea class="images"></textarea>
           <input class="save-images-button" type="button" value="Save images">
         </div>
         <div class="image-area" style="position:relative;">
         </div>
-        <div class="editable" data-prop="notes"></div>
-        <a href="#" class="delete">Delete Listing</a>
       </div>
     """
     imageRotator = imageRotatorer()
@@ -76,14 +74,10 @@ define "bubble-view", () ->
     self.el = el
     #view addimages
     addImages = (urls) ->
-      console.log "urls are"
-      console.log urls
       _.each urls, (url) ->
         addImage url
     self.addImages = addImages
     addImage = (url) ->
-      console.log "trying to add a single image"
-      console.log el
       imageRotator.addImage url, config.width
     handleAddImages = () ->
       self.el.find(".add-image-area").show()
