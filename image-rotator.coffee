@@ -16,31 +16,28 @@ define "image-rotator", () ->
     self.el = el
     el.bind "click", (e) ->
       handleImageClick()
-    addImage = (url, maxDimension) ->
 
+
+    self.getAdjustedDimensions = getAdjustedDimensions = (w, h) ->
+      widthedHeight = (h/w) * config.imgMaxWidth
+      heightedWidth =  (w/h) * config.imgMaxHeight
+      if widthedHeight > config.imgMaxHeight
+        [heightedWidth, config.imgMaxHeight]
+      else
+        [config.imgMaxWidth, widthedHeight]
+
+    addImage = (url) ->
       img = $ """
-        <img src="#{url}" style="position: absolute; top: 0; left: 0;"/>
+        <img src="#{url}" style="width: #{config.imgMaxWidth}px; position: absolute; top: 0; left: 0;"/>
       """
+      console.log img
       img.bind "load", () ->
         h = this.height #img.height()
         w = this.width #width()
+        [w,h] = getAdjustedDimensions w,h
+        img.animate "width": "#{w}px"
+        img.animate "height": "#{h}px"
 
-        console.log "height = #{h}"
-        console.log "width = #{w}"
-
-        #if maxed to width
-        widthedHeight = (h/w) * config.imgMaxWidth
-        heightedWidth =  (w/h) * config.imgMaxHeight
-
-        console.log "maxHeight #{config.imgMaxHeight} heightedWidth #{heightedWidth}"
-        console.log "maxWidth #{config.imgMaxWidth} widthedHeight #{widthedHeight}"
-
-        if widthedHeight > config.imgMaxHeight
-          img.css "height": "#{config.imgMaxHeight}px"
-          img.css "width": "#{heightedWidth}px"
-        else
-          img.css "height": "#{widthedHeight}px"
-          img.css "width": "#{config.imgMaxWidth}px"
 
       images.push img
       el.append img

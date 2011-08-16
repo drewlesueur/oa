@@ -8,7 +8,7 @@
     severus = require("severus");
     config = require("config");
     return imageRotatorer = function() {
-      var addImage, el, handleImageClick, images, index, next, prev, render, self;
+      var addImage, el, getAdjustedDimensions, handleImageClick, images, index, next, prev, render, self;
       self = drews;
       el = $("<div class=\"image-rotator\" style=\"position:relative;\">\n</div>");
       index = 0;
@@ -17,34 +17,31 @@
       el.bind("click", function(e) {
         return handleImageClick();
       });
-      addImage = function(url, maxDimension) {
+      self.getAdjustedDimensions = getAdjustedDimensions = function(w, h) {
+        var heightedWidth, widthedHeight;
+        widthedHeight = (h / w) * config.imgMaxWidth;
+        heightedWidth = (w / h) * config.imgMaxHeight;
+        if (widthedHeight > config.imgMaxHeight) {
+          return [heightedWidth, config.imgMaxHeight];
+        } else {
+          return [config.imgMaxWidth, widthedHeight];
+        }
+      };
+      addImage = function(url) {
         var img;
-        img = $("<img src=\"" + url + "\" style=\"position: absolute; top: 0; left: 0;\"/>");
+        img = $("<img src=\"" + url + "\" style=\"width: " + config.imgMaxWidth + "px; position: absolute; top: 0; left: 0;\"/>");
+        console.log(img);
         img.bind("load", function() {
-          var h, heightedWidth, w, widthedHeight;
+          var h, w, _ref;
           h = this.height;
           w = this.width;
-          console.log("height = " + h);
-          console.log("width = " + w);
-          widthedHeight = (h / w) * config.imgMaxWidth;
-          heightedWidth = (w / h) * config.imgMaxHeight;
-          console.log("maxHeight " + config.imgMaxHeight + " heightedWidth " + heightedWidth);
-          console.log("maxWidth " + config.imgMaxWidth + " widthedHeight " + widthedHeight);
-          if (widthedHeight > config.imgMaxHeight) {
-            img.css({
-              "height": "" + config.imgMaxHeight + "px"
-            });
-            return img.css({
-              "width": "" + heightedWidth + "px"
-            });
-          } else {
-            img.css({
-              "height": "" + widthedHeight + "px"
-            });
-            return img.css({
-              "width": "" + config.imgMaxWidth + "px"
-            });
-          }
+          _ref = getAdjustedDimensions(w, h), w = _ref[0], h = _ref[1];
+          img.animate({
+            "width": "" + w + "px"
+          });
+          return img.animate({
+            "height": "" + h + "px"
+          });
         });
         images.push(img);
         el.append(img);
