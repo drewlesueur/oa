@@ -59,8 +59,6 @@ define "map-page-presenter", () ->
     
     #addimages presenter
     addImages = (listing, urls) ->
-      console.log "called the add images function"
-      console.log listing
       listing.addImages urls
       #listingMaker.addImages listing, urls
     self.addImages = addImages

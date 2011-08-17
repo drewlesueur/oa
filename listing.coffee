@@ -34,12 +34,13 @@ define "listing", () ->
     self.addImages = addImages
     deleteImage = self.deleteImage = (url) ->
       attrs.images or= []
+      console.log attrs.images
       for image, index in attrs.images
         if image == url
           attrs.images.splice(index, 1)
-          trigger "deleteimage", (url)
           save (err) ->
             trigger "faileddeleteimage"
+          trigger "deleteimage", (url)
 
     get = (self, prop, value) ->
       return self.attrs[prop]

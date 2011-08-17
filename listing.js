@@ -37,13 +37,14 @@
       deleteImage = self.deleteImage = function(url) {
         var image, index, _len, _ref, _results;
         attrs.images || (attrs.images = []);
+        console.log(attrs.images);
         _ref = attrs.images;
         _results = [];
         for (index = 0, _len = _ref.length; index < _len; index++) {
           image = _ref[index];
-          _results.push(image === url ? (attrs.images.splice(index, 1), trigger("deleteimage", url), save(function(err) {
+          _results.push(image === url ? (attrs.images.splice(index, 1), save(function(err) {
             return trigger("faileddeleteimage");
-          })) : void 0);
+          }), trigger("deleteimage", url)) : void 0);
         }
         return _results;
       };

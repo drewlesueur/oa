@@ -29,67 +29,62 @@
         }
       };
       deleteImage = self.deleteImage = function(url) {
-        var image, index, _len, _results;
+        var image, _index, _len, _results;
+        console.log(images);
         _results = [];
-        for (index = 0, _len = images.length; index < _len; index++) {
-          image = images[index];
-          _results.push(image.attr("src") === url ? (images.splice(index, 1), next(), image.remove()) : void 0);
+        for (_index = 0, _len = images.length; _index < _len; _index++) {
+          image = images[_index];
+          image = $(image);
+          _results.push(image.attr("src") === url ? (images.splice(_index, 1), render(), image.remove()) : void 0);
         }
         return _results;
       };
       addImage = function(url) {
         var img;
         img = $("<img src=\"" + url + "\" style=\"width: " + config.imgMaxWidth + "px; position: absolute; top: 0; left: 0;\"/>");
-        console.log(img);
-        img.bind("load", function() {
+        return img.bind("load", function() {
           var h, w, _ref;
+          images.push(img);
+          el.append(img);
           h = this.height;
           w = this.width;
           _ref = getAdjustedDimensions(w, h), w = _ref[0], h = _ref[1];
           img.animate({
             "width": "" + w + "px"
           });
-          return img.animate({
+          img.animate({
             "height": "" + h + "px"
           });
+          index = images.length - 1;
+          render();
+          return self;
         });
-        images.push(img);
-        index += 1;
-        el.append(img);
-        next();
-        return self;
       };
       handleImageClick = function() {
         return next();
       };
       self.addImage = addImage;
       next = function() {
-        console.log(images);
-        console.log(index);
         index += 1;
-        if (index >= images.length) {
-          index = 0;
-        }
         return render();
       };
       self.next = next;
       getCurrentUrl = function() {
-        console.log(images);
-        console.log(index);
-        console.log(images[index]);
         return images[index].attr("src");
       };
       self.getCurrentUrl = getCurrentUrl;
       prev = function() {
         index += 1;
-        if (index <= 0) {
-          index = images.length - 1;
-        }
         return render();
       };
       self.prev = prev;
       render = function() {
         var i, image, _len, _results;
+        if (index >= images.length) {
+          index = 0;
+        } else if (index < 0) {
+          index = images.length - 1;
+        }
         _results = [];
         for (i = 0, _len = images.length; i < _len; i++) {
           image = images[i];

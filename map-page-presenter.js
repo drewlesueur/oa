@@ -73,8 +73,6 @@
         return model.set(prop, value);
       });
       addImages = function(listing, urls) {
-        console.log("called the add images function");
-        console.log(listing);
         return listing.addImages(urls);
       };
       self.addImages = addImages;

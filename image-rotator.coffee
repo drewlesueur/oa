@@ -30,47 +30,41 @@ define "image-rotator", () ->
         [config.imgMaxWidth, widthedHeight]
 
     deleteImage = self.deleteImage = (url) ->
-      for image, index in images
+      console.log images
+      for image, _index in images
+        image = $ image # I tought image was already a jquert object
         if image.attr("src") == url
-          images.splice(index, 1)
-          next()
+          images.splice(_index, 1)
+          render()
           image.remove()
 
     addImage = (url) ->
       img = $ """
         <img src="#{url}" style="width: #{config.imgMaxWidth}px; position: absolute; top: 0; left: 0;"/>
       """
-      console.log img
       img.bind "load", () ->
+        images.push img
+        el.append img
         h = this.height #img.height()
         w = this.width #width()
         [w,h] = getAdjustedDimensions w,h
         img.animate "width": "#{w}px"
         img.animate "height": "#{h}px"
+        index = images.length - 1
+        render()
+        self
 
 
-      images.push img
-      index += 1
-      el.append img
-      next()
-      self
     handleImageClick = () ->
       next()
     self.addImage = addImage
 
     next = () ->
-      console.log images
-      console.log index
       index += 1 
-      if index >= images.length
-        index = 0
       render()
     self.next = next
 
     getCurrentUrl = () ->
-      console.log images
-      console.log index
-      console.log images[index]
       images[index].attr "src"
     self.getCurrentUrl = getCurrentUrl
     
@@ -78,12 +72,14 @@ define "image-rotator", () ->
 
     prev = () ->
       index += 1 
-      if index <= 0
-        index = images.length - 1
       render()
     self.prev = prev
 
     render = () ->
+      if index >= images.length
+        index = 0
+      else if index < 0
+        index = images.length - 1
       for image, i in images
         if index == i
           images[i].show()

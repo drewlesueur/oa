@@ -26,7 +26,7 @@
         return trigger("addimages", model, urls);
       });
       bubbleHtml = require("bubble-html");
-      el = $("<div>\n  <div>\n    " + bubbleHtml + "\n  </div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\" >\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n  <div style=\"bottom: -10px; position: absolute;\">\n    <a href=\"#\" style=\"font-size: 10px;\" class=\"delete-image\">delete image</a>\n  </div>\n</div>");
+      el = $("<div>\n  <div>\n    " + bubbleHtml + "\n  </div>\n  <a href=\"#\" class=\"delete\">Delete Listing</a>\n  <div class=\"file-upload\">\n  </div>\n  <div class=\"add-image-area\" >\n    <textarea class=\"images\"></textarea>\n    <input class=\"save-images-button\" type=\"button\" value=\"Save images\">\n  </div>\n  <div class=\"image-area\" style=\"position:relative;\">\n  </div>\n  <div style=\"bottom: 0px; position: absolute;\">\n    <a href=\"#\" style=\"font-size: 10px;\" class=\"delete-image\">delete image</a>\n  </div>\n</div>");
       imageRotator = imageRotatorer();
       el.find(".image-area").append(imageRotator.el);
       el.find(".delete-image").bind("click", function() {

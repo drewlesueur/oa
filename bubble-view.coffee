@@ -40,7 +40,7 @@ define "bubble-view", () ->
         </div>
         <div class="image-area" style="position:relative;">
         </div>
-        <div style="bottom: -10px; position: absolute;">
+        <div style="bottom: 0px; position: absolute;">
           <a href="#" style="font-size: 10px;" class="delete-image">delete image</a>
         </div>
       </div>
